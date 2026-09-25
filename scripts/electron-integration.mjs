@@ -7,16 +7,21 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { startHarness, root, readSessionLog } from './harness.mjs';
 
 const host = await startHarness({ sequence: ['slow_success'], successText: 'ELECTRON_REMOTE_TURN_OK', chunkDelayMs: 400 });
+const executablePath = process.env.DSH_ELECTRON_EXECUTABLE;
+const launchOptions = userData => ({
+  ...(executablePath ? { executablePath } : {}),
+  args: [...(executablePath ? [] : [join(root, 'apps/electron')]), `--user-data-dir=${userData}`, '--lang=en-US'],
+  timeout: 30_000,
+});
 let application;
 let remote;
 let settings;
+const requests = [];
+const pageErrors = [];
 try {
   const userData = join(host.run, 'electron-data');
   await mkdir(userData);
-  application = await electron.launch({
-    args: [join(root, 'apps/electron'), `--user-data-dir=${userData}`, '--lang=en-US'],
-    timeout: 30_000,
-  });
+  application = await electron.launch(launchOptions(userData));
   const frames = [];
   const bridges = [];
   await application.context().routeWebSocket('**/api/remote.mux', client => {
@@ -38,7 +43,18 @@ try {
   const opened = application.waitForEvent('window');
   await settings.locator('#connect').click();
   remote = await opened;
-  const pageErrors = [];
+  // A window is published before authentication finishes saving the URL and
+  // showing it. Wait for the native settings-to-workspace handoff before input.
+  await application.evaluate(async ({ BrowserWindow }) => {
+    const settings = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().startsWith('file:'));
+    if (settings.isVisible()) await new Promise(resolve => settings.once('hide', resolve));
+    const workspace = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().startsWith('http:'));
+    if (!workspace?.isVisible()) throw new Error('Remote workspace was not shown after settings closed');
+  });
+  remote.on('response', response => {
+    const pathname = new URL(response.url()).pathname;
+    if (pathname.startsWith('/api/')) requests.push({ pathname, status: response.status() });
+  });
   remote.on('pageerror', error => pageErrors.push(error.message));
   await remote.waitForURL(`${host.base}/`);
   await remote.locator('#root').waitFor({ timeout: 30_000 });
@@ -60,10 +76,13 @@ try {
   assert.deepEqual(JSON.parse(saved), { url: `${host.base}/` });
   assert.equal(saved.includes(host.token), false);
   console.log('PASS: remote renderer has no Node/preload bridge; persisted settings contain only URL.');
-  await remote.locator('[data-composer-input][contenteditable="true"]').first().waitFor();
-  const composer = remote.locator('[data-composer-input][contenteditable="true"]').last();
+  const composer = remote.locator('[data-composer-input][contenteditable="true"][data-phase="plain"]:not([aria-disabled="true"])').last();
   await composer.waitFor();
+  await composer.click();
   await composer.fill('Reply with the remote integration marker.');
+  // Lexical publishes its draft to the input machine asynchronously. Send is
+  // enabled only after that draft is actionable; DOM text alone is insufficient.
+  await remote.getByRole('button', { name: 'Send message', exact: true }).and(remote.locator(':enabled')).waitFor();
   const accepted = remote.waitForResponse(response => response.url().endsWith('/api/session/prompt'));
   await composer.press('Enter');
   const firstPrompt = await accepted;
@@ -100,6 +119,7 @@ try {
   console.log('PASS: network loss recovers through a fresh WebSocket generation.');
 
   await composer.fill('Continue while the desktop client exits.');
+  await remote.getByRole('button', { name: 'Send message', exact: true }).and(remote.locator(':enabled')).waitFor();
   const secondAccepted = remote.waitForResponse(response => response.url().endsWith('/api/session/prompt'));
   const beforeRequests = host.model.requests.length;
   await composer.press('Enter');
@@ -121,9 +141,7 @@ try {
   assert.equal(events.filter(event => event.type === 'turn/end').length, 2);
   console.log('PASS: the in-flight server turn completes and persists after Electron exits.');
 
-  application = await electron.launch({
-    args: [join(root, 'apps/electron'), `--user-data-dir=${userData}`, '--lang=en-US'], timeout: 30_000,
-  });
+  application = await electron.launch(launchOptions(userData));
   settings = await application.firstWindow();
   await settings.waitForFunction(() => document.querySelector('#server').value.length > 0);
   assert.equal(await settings.locator('#server').inputValue(), `${host.base}/`);
@@ -140,6 +158,8 @@ try {
 } catch (error) {
   if (settings && !settings.isClosed()) console.error('Connection status:', await settings.locator('#status').innerText());
   if (remote && !remote.isClosed()) {
+    console.error('Remote API responses:', requests.slice(-30));
+    console.error('Remote page errors:', pageErrors);
     console.error('Remote UI:', (await remote.locator('body').innerText()).slice(0, 3000));
     await remote.screenshot({ path: join(root, 'artifacts/electron-failure.png') });
   }

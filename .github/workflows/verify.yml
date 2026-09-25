@@ -1,18 +1,39 @@
-name: Verify standalone app server
+name: Verify and package desktops
 on:
   push:
+    branches: [main, 'feat/**', 'fix/**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  client:
+  desktop:
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+          - runner: windows-latest
+            platform: win
+            arch: x64
+            executable: apps/electron/dist/win-unpacked/DSH Remote.exe
+          - runner: macos-15-intel
+            platform: mac
+            arch: x64
+            executable: apps/electron/dist/mac/DSH Remote.app/Contents/MacOS/DSH Remote
+          - runner: macos-15
+            platform: mac
+            arch: arm64
+            executable: apps/electron/dist/mac-arm64/DSH Remote.app/Contents/MacOS/DSH Remote
+    runs-on: ${{ matrix.runner }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,34 +42,57 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Configure Electron setuid sandbox (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - name: Electron smoke (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a node apps/electron/tests/smoke.mjs
-      - name: Electron smoke (Windows)
-        if: runner.os == 'Windows'
+      - name: Electron smoke (Windows and macOS)
+        if: runner.os != 'Linux'
         run: node apps/electron/tests/smoke.mjs
-      - name: Pack Windows installer
-        if: runner.os == 'Windows'
-        run: npm run build:win
-      - uses: actions/upload-artifact@v4
-        if: runner.os == 'Windows'
-        with:
-          name: windows-client
-          path: apps/electron/dist/*.exe
-  linux-host:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
+      - name: Build native desktop packages
+        run: npm run build:${{ matrix.platform }} -- --${{ matrix.arch }}
+      - name: Smoke packaged Windows and macOS applications
+        if: runner.os != 'Linux'
+        env:
+          DSH_ELECTRON_EXECUTABLE: ${{ matrix.executable }}
+        run: node apps/electron/tests/smoke.mjs
       - run: npm run prepare:integration
+        if: runner.os == 'Linux'
       - run: npm run test:integration
-      - run: xvfb-run -a npm run test:electron
+        if: runner.os == 'Linux'
+      - name: Packaged Linux functional and experience checks
+        if: runner.os == 'Linux'
+        env:
+          DSH_ELECTRON_EXECUTABLE: /opt/DSH Remote/dsh-remote
+        run: |
+          sudo apt-get install -y ./apps/electron/dist/*.deb
+          xvfb-run -a npm run test:electron
+          xvfb-run -a node scripts/experience.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        with:
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
+          if-no-files-found: error
+          path: |
+            apps/electron/dist/*.exe
+            apps/electron/dist/*.AppImage
+            apps/electron/dist/*.deb
+            apps/electron/dist/*.dmg
+            apps/electron/dist/*.zip
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: release-plugin
+          path: artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always() && runner.os == 'Linux'
         with:
           name: linux-host-evidence
-          path: artifacts/
+          path: artifacts/screenshots/
+          retention-days: 7

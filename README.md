@@ -1,18 +1,20 @@
 # DSH App Server
 
-独立的 DeepSeek Harness 远程桌面项目：Windows Electron 客户端选择服务器地址，Linux 上的 Harness 执行 Agent、模型请求、文件与终端操作，并保存会话。客户端复用服务端提供的完整 Web GUI。退出客户端不会关闭服务器。
+独立的 DeepSeek Harness 远程桌面项目：Windows、Linux、macOS Electron 客户端选择服务器地址，Linux 上的 Harness 执行 Agent、模型请求、文件与终端操作，并保存会话。客户端复用服务端提供的完整 Web GUI。退出客户端不会关闭服务器。
 
 本项目不修改原 Harness 仓库。兼容目标为 `@deepseek-ai/dsh@0.1.7-rc.2`；客户端接入协议版本为 `1`。服务端是可安装的 Cordis bundle，客户端是独立 Electron 应用，不是原桌面程序的插件。
+
+当前工作站的服务管理、连接方法和验收顺序见 [验收入口](docs/acceptance.md)。其他机器按下面的标准安装步骤部署。
 
 ## Linux 服务端
 
 需要 Node.js 24 和可用的模型配置。先安装指定版本的 Harness 和其插件管理器使用的 pnpm：
 
 ```bash
-npm install --global @deepseek-ai/dsh@0.1.7-rc.2 pnpm@11.7.0
+npm install --global @deepseek-ai/dsh@0.1.7-rc.2 pnpm@11.28.0
 export DSH_HOME="$HOME/.dsh-app-server"
 dsh --profile app-server --from-default-profile web --dump-config
-dsh plugin --profile app-server add /absolute/path/dsh-app-server-server-0.1.0.tgz
+dsh plugin --profile app-server add /absolute/path/dsh-app-server-server-0.2.0.tgz
 dsh --profile app-server --no-open --port 3080
 ```
 
@@ -46,6 +48,16 @@ dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.co
 
 ## Electron 客户端
 
+从私有仓库的 [Releases](https://github.com/lisp19/dsh-app-server/releases) 下载对应系统安装包和服务端插件，需登录获授权的 GitHub 账户。校验 `SHA256SUMS` 后安装；版本历史见 [CHANGELOG](CHANGELOG.md)。
+
+| 系统 | 架构 | 安装格式 |
+| --- | --- | --- |
+| Windows | x64 | NSIS `.exe` |
+| Linux | x64 | `.AppImage`、`.deb` |
+| macOS | Intel x64、Apple Silicon arm64 | `.dmg`、`.zip` |
+
+安装包未配置发行者签名，macOS 仅作本地 ad-hoc 签名、未 notarize。遵循系统提示与组织的软件安装政策，不要关闭系统安全防护。Linux deb 使用 `sudo apt install ./dsh-remote-0.2.0-linux-x64.deb`，安装后从应用菜单启动 DSH Remote。
+
 Windows 安装包构建命令：
 
 ```powershell
@@ -53,7 +65,7 @@ npm ci
 npm run build:win
 ```
 
-产物位于 `apps/electron/dist/`。安装包未配置代码签名。开发运行：
+Linux 构建运行 `npm run build:linux`；macOS 在对应架构的 Mac 上运行 `npm run build:mac`。产物位于 `apps/electron/dist/`，文件名带版本、系统和架构。平台构建采用 [Electron Builder 的多平台方式](https://www.electron.build/docs/features/multi-platform-build/)。开发运行：
 
 ```bash
 npm ci
@@ -81,7 +93,7 @@ npm run pack:server
 npm run build:win
 ```
 
-插件包输出到 `artifacts/`。Linux 交叉构建 NSIS 安装包需要 Wine；Windows 本机构建不需要。详细验收证据见 [verification.md](docs/verification.md)，不要将交叉构建成功等同于 Windows 实机验收。
+插件包输出到 `artifacts/`。Linux 交叉构建 NSIS 安装包需要 Wine；Windows 本机构建不需要。Linux 功能与体验检查见 [qa-linux.md](docs/qa-linux.md)，0.1.0 基线记录见 [verification.md](docs/verification.md)。维护与发布方法见 [CONTRIBUTING](CONTRIBUTING.md)。
 
 ## 范围与限制
 

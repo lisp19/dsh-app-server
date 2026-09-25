@@ -15,12 +15,15 @@
     "start": "npm start --workspace apps/electron",
     "prepack:server": "node -e \"require('node:fs').mkdirSync('artifacts', { recursive: true })\"",
     "pack:server": "npm pack --workspace packages/server --pack-destination artifacts",
-    "build:win": "npm run pack:win --workspace apps/electron",
-    "build:linux": "npm run pack:linux --workspace apps/electron",
-    "build:mac": "npm run pack:mac --workspace apps/electron",
+    "build:win": "npm run pack:win --workspace apps/electron --",
+    "build:linux": "npm run pack:linux --workspace apps/electron --",
+    "build:mac": "npm run pack:mac --workspace apps/electron --",
     "test:integration": "node scripts/integration.mjs",
     "prepare:integration": "node scripts/prepare-integration.mjs",
     "test:electron": "node scripts/electron-integration.mjs"
+  },
+  "overrides": {
+    "fflate": "$fflate"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
@@ -29,9 +32,9 @@
     "@deepseek-ai/dsh-credentials-local": "0.1.7-rc.2",
     "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.2",
     "@deepseek-ai/dsh-llm-mock-server": "0.1.7-rc.2",
-    "fflate": "^0.8.2",
+    "fflate": "0.8.3",
     "playwright": "^1.58.2",
-    "pnpm": "11.7.0",
+    "pnpm": "11.28.0",
     "ws": "^8.21.0"
   }
 }

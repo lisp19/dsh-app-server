@@ -41,7 +41,12 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 const secondOrigin = `http://127.0.0.1:${secondServer.address().port}`;
 let application;
 try {
-  application = await _electron.launch({ args: [appDirectory, `--user-data-dir=${directory}`], timeout: 20000 });
+  const executablePath = process.env.DSH_ELECTRON_EXECUTABLE;
+  application = await _electron.launch({
+    ...(executablePath ? { executablePath: path.resolve(executablePath) } : {}),
+    args: [...(executablePath ? [] : [appDirectory]), `--user-data-dir=${directory}`, '--lang=en-US'],
+    timeout: 20000,
+  });
   const settings = await application.firstWindow();
   await settings.locator('#connect').waitFor();
   assert.equal(await settings.locator('#token').inputValue(), '');

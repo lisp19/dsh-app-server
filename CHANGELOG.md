@@ -1,0 +1,14 @@
+# Changelog
+
+## 0.2.0
+
+- Add Linux AppImage/deb and macOS Intel/Apple Silicon dmg/zip packaging alongside Windows NSIS.
+- Add native-platform build automation and release checks requiring all desktop packages and the server plugin, with SHA-256 metadata.
+- Exercise the packaged Linux client against a real Harness server and check bilingual connection-page interaction and window resizing.
+- Update pnpm and fflate tooling to patched versions; make plugin installation scripts follow the manifest version.
+
+## 0.1.0
+
+- Provide an independently installable Cordis app-server bundle with authenticated protocol discovery and Linux directory browsing.
+- Provide a sandboxed remote Electron client with server selection, transient authentication, protocol checks and server-independent lifecycle.
+- Validate actual Harness sessions, streaming, tool execution, reconnect and history restoration on Linux; cross-build Windows x64 NSIS.

@@ -1,4 +1,4 @@
-# 验证与交付记录
+# 0.1.0 基线验证与交付记录
 
 验证日期：2026-09-25。环境：Linux x64、Node.js 24.15.0、Electron 44.0.0、Harness 0.1.7-rc.2。原仓库仅供只读参考，实现位于 `/home/lsp/dsh-app-server`。
 
