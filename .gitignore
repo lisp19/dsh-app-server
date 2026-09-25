@@ -1,0 +1,8 @@
+node_modules/
+artifacts/
+.integration/
+.cache/
+test-results/
+*.log
+.env
+apps/electron/dist/

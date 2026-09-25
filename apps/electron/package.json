@@ -1,0 +1,30 @@
+{
+  "name": "@dsh-app-server/electron",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated desktop client for DSH App Server",
+  "author": "DSH App Server contributors",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.mjs",
+    "test:smoke": "node tests/smoke.mjs",
+    "pack:linux": "electron-builder --linux dir",
+    "pack:win": "electron-builder --win nsis --x64",
+    "pack:win:dir": "electron-builder --win dir --x64"
+  },
+  "devDependencies": {
+    "electron": "44.0.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.dsh.appserver.client",
+    "productName": "DSH Remote",
+    "directories": { "output": "dist" },
+    "files": ["src/**/*", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "dir", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "linux": { "target": ["dir"], "category": "Development" }
+  }
+}

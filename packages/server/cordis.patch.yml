@@ -1,0 +1,14 @@
+# Apply after the base and web-app bundles in a dedicated Web-derived profile.
+- id: directory-picker
+  disabled: true
+- id: open-in-app
+  disabled: true
+- id: ui-open-in-app
+  disabled: true
+- insert:
+    - id: app-server
+      name: '@dsh-app-server/server'
+    - id: app-server-directory-picker
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
+    - id: app-server-directory-picker-ui
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'

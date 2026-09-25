@@ -1,0 +1,20 @@
+# Install as ~/.config/systemd/user/dsh-app-server.service.
+# Replace /usr/local/bin/dsh with `command -v dsh` for this account.
+# Set PATH if Node/pnpm are installed by a version manager.
+[Unit]
+Description=DSH App Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=DSH_HOME=%h/.dsh-app-server
+WorkingDirectory=%h
+ExecStart=/usr/local/bin/dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.com
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=90
+UMask=0077
+
+[Install]
+WantedBy=default.target

@@ -17,7 +17,7 @@
 
 ## GUI 与数据流
 
-用户在 Electron 连接页填写服务器根地址和该服务端签发的启动 token。客户端使用独立会话分区完成现有根页面 token 换 cookie 流程，再加载服务端提供的 HTML、客户端插件和静态资源。HTTP RPC 与 WebSocket 流继续使用 Harness 现有协议和连接恢复能力，不复制 Agent API 或重建聊天界面。
+用户在 Electron 连接页填写服务器根地址和该服务端签发的启动 token。客户端使用独立会话分区完成现有根页面 token 换 cookie 流程，再加载服务端提供的 HTML、客户端插件和静态资源。令牌交换使用 Electron `net.request` 的手动 redirect 事件，验证 303 和同源根地址后终止请求，不跟随重定向；后续版本探测使用 `session.fetch`。HTTP RPC 与 WebSocket 流继续使用 Harness 现有协议和连接恢复能力，不复制 Agent API 或重建聊天界面。
 
 客户端保存服务器地址；启动 token 不写入明文配置。是否已认证以服务端响应为准，过期凭据必须重新输入。连接失败可以重试或修改地址，切换服务器必须隔离此前的认证状态。诊断不得记录 token、cookie 或带 token 的完整 URL。
 

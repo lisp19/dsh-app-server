@@ -1,0 +1,54 @@
+name: Verify standalone app server
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  client:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Electron smoke (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node apps/electron/tests/smoke.mjs
+      - name: Electron smoke (Windows)
+        if: runner.os == 'Windows'
+        run: node apps/electron/tests/smoke.mjs
+      - name: Pack Windows installer
+        if: runner.os == 'Windows'
+        run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: windows-client
+          path: apps/electron/dist/*.exe
+  linux-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run prepare:integration
+      - run: npm run test:integration
+      - run: xvfb-run -a npm run test:electron
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-host-evidence
+          path: artifacts/

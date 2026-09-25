@@ -1,0 +1,8 @@
+# Replace the example domain. DNS must reach this Caddy instance.
+harness.example.com {
+    reverse_proxy 127.0.0.1:3080 {
+        # Keep the incoming Host for Harness's authority-bound cookie checks.
+        # Caddy forwards WebSocket upgrades without a separate route.
+        header_down Set-Cookie "^(.*)$" "$1; Secure"
+    }
+}
