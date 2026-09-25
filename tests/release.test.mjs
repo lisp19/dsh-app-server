@@ -4,6 +4,7 @@ import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const root = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
 const client = JSON.parse(await readFile(new URL('../apps/electron/package.json', import.meta.url)));
@@ -22,7 +23,7 @@ test('all package versions agree and desktop targets cover each platform', () =>
 test('release manifest requires every target, correct tag and nonempty artifacts', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-release-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  const run = tag => spawnSync(process.execPath, [script.pathname, directory, tag], { encoding: 'utf8' });
+  const run = tag => spawnSync(process.execPath, [fileURLToPath(script), directory, tag], { encoding: 'utf8' });
   assert.notEqual(run('v9.0.0').status, 0);
   assert.notEqual(run(`v${root.version}`).status, 0);
   const names = [

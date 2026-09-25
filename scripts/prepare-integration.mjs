@@ -1,5 +1,5 @@
 /** Install the packed plugin through the supported profile-management CLI. */
-import { mkdir, stat } from 'node:fs/promises';
+import { mkdir, stat, readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join, delimiter } from 'node:path';
@@ -24,5 +24,6 @@ catch (error) {
   if (error.code !== 'ENOENT') throw error;
   await run(process.execPath, [cli, '--profile', 'app-server', '--from-default-profile', 'web', '--dump-config'], true);
 }
-await run(process.execPath, [cli, 'plugin', '--profile', 'app-server', 'add', join(root, 'artifacts', 'dsh-app-server-server-0.1.0.tgz')]);
+const { version } = JSON.parse(await readFile(join(root, 'packages/server/package.json'), 'utf8'));
+await run(process.execPath, [cli, 'plugin', '--profile', 'app-server', 'add', join(root, 'artifacts', `dsh-app-server-server-${version}.tgz`)]);
 console.log('Packed plugin installed in .integration/installation.');

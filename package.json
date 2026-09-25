@@ -1,6 +1,6 @@
 {
   "name": "dsh-app-server-project",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -16,6 +16,8 @@
     "prepack:server": "node -e \"require('node:fs').mkdirSync('artifacts', { recursive: true })\"",
     "pack:server": "npm pack --workspace packages/server --pack-destination artifacts",
     "build:win": "npm run pack:win --workspace apps/electron",
+    "build:linux": "npm run pack:linux --workspace apps/electron",
+    "build:mac": "npm run pack:mac --workspace apps/electron",
     "test:integration": "node scripts/integration.mjs",
     "prepare:integration": "node scripts/prepare-integration.mjs",
     "test:electron": "node scripts/electron-integration.mjs"

@@ -1,9 +1,10 @@
 {
   "name": "@dsh-app-server/server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Remote Electron access to a Linux DeepSeek Harness Web profile",
   "type": "module",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/lisp19/dsh-app-server.git", "directory": "packages/server" },
   "main": "src/index.js",
   "exports": { ".": "./src/index.js", "./package.json": "./package.json" },
   "files": ["src", "cordis.patch.yml", "README.md"],

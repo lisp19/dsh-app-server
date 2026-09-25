@@ -1,18 +1,22 @@
 {
   "name": "@dsh-app-server/electron",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Isolated desktop client for DSH App Server",
   "author": "DSH App Server contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/lisp19/dsh-app-server",
+  "desktopName": "dsh-remote.desktop",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
-    "pack:linux": "electron-builder --linux dir",
-    "pack:win": "electron-builder --win nsis --x64",
-    "pack:win:dir": "electron-builder --win dir --x64"
+    "pack:linux": "electron-builder --linux AppImage deb --x64 --publish never",
+    "pack:mac": "electron-builder --mac dmg zip --publish never",
+    "pack:win": "electron-builder --win nsis --x64 --publish never",
+    "pack:win:dir": "electron-builder --win dir --x64 --publish never"
   },
   "devDependencies": {
     "electron": "44.0.0",
@@ -21,10 +25,12 @@
   "build": {
     "appId": "org.dsh.appserver.client",
     "productName": "DSH Remote",
+    "artifactName": "dsh-remote-${version}-${os}-${arch}.${ext}",
     "directories": { "output": "dist" },
     "files": ["src/**/*", "package.json"],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "dir", "arch": ["x64"] }] },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "linux": { "target": ["dir"], "category": "Development" }
+    "linux": { "target": ["AppImage", "deb"], "category": "Development", "maintainer": "lisp19 <lisp19@users.noreply.github.com>", "executableName": "dsh-remote", "syncDesktopName": true, "artifactName": "dsh-remote-${version}-linux-x64.${ext}" },
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.developer-tools", "identity": null }
   }
 }
