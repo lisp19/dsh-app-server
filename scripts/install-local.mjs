@@ -1,5 +1,6 @@
 /** Install the release plugin into a dedicated local acceptance profile. */
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile, copyFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { join, delimiter, dirname } from 'node:path';
 import { root } from './harness.mjs';
@@ -13,6 +14,12 @@ const { version } = JSON.parse(await readFile(join(root, 'packages/server/packag
 const tarball = join(root, 'artifacts', `dsh-app-server-server-${version}.tgz`);
 await stat(tarball);
 await mkdir(workspace, { recursive: true });
+const packages = join(directory, 'packages');
+await mkdir(packages, { recursive: true });
+// A content-specific path avoids pnpm reusing an older local tarball resolution.
+const digest = createHash('sha256').update(await readFile(tarball)).digest('hex');
+const installedTarball = join(packages, `app-server-${version}-${digest}.tgz`);
+await copyFile(tarball, installedTarball);
 const cli = join(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js');
 const executablePath = [dirname(process.execPath), join(root, 'node_modules/.bin'), process.env.PATH].join(delimiter);
 const env = { ...process.env, DSH_HOME: home, PATH: executablePath };
@@ -28,7 +35,7 @@ catch (error) {
   if (error.code !== 'ENOENT') throw error;
   await run(['--profile', 'app-server', '--from-default-profile', 'web', '--dump-config'], true);
 }
-await run(['plugin', '--profile', 'app-server', 'add', tarball]);
+await run(['plugin', '--profile', 'app-server', 'add', installedTarball]);
 // User-owned overlays and model credentials survive repeated plugin installation.
 try { await stat(join(profile, 'cordis.patch.yml')); }
 catch (error) {
