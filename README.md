@@ -58,6 +58,8 @@ dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.co
 
 安装包未配置发行者签名，macOS 仅作本地 ad-hoc 签名、未 notarize。遵循系统提示与组织的软件安装政策，不要关闭系统安全防护。Linux deb 使用 `sudo apt install ./dsh-remote-0.2.0-linux-x64.deb`，安装后从应用菜单启动 DSH Remote。
 
+AppImage 下载后先执行 `chmod +x dsh-remote-0.2.0-linux-x64.AppImage`，再运行该文件。没有 FUSE 时可用 `APPIMAGE_EXTRACT_AND_RUN=1 ./dsh-remote-0.2.0-linux-x64.AppImage`；本项目验证了 extraction 模式，不要求禁用 Electron sandbox。
+
 Windows 安装包构建命令：
 
 ```powershell

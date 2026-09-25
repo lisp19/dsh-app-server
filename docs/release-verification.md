@@ -10,6 +10,12 @@
 
 `v0.2.0` 标签的发布工作流再次执行完整原生矩阵。只有全部通过且 8 个必需发行文件齐全、非空、版本一致时才创建 Release；附带 `SHA256SUMS` 和 `release-manifest.json`。最终发布结果以 [Releases](https://github.com/lisp19/dsh-app-server/releases) 和 [发布工作流](https://github.com/lisp19/dsh-app-server/actions/workflows/release.yml) 为准。
 
+最终标签提交为 `b1d503fb08e90c31d12caf51a3a75647874f70cf`。[发布运行 36166705566](https://github.com/lisp19/dsh-app-server/actions/runs/36166705566) 的四个平台及 publish 全部成功；同提交的 [main 检查](https://github.com/lisp19/dsh-app-server/actions/runs/36166705466) 也成功。[v0.2.0](https://github.com/lisp19/dsh-app-server/releases/tag/v0.2.0) 已发布，可由私有仓库获授权成员访问，是 latest release；v0.1.0 保留为基线。
+
+通过 `gh release download v0.2.0` 下载全部发行文件后，8 个文件的 `sha256sum -c SHA256SUMS` 全部通过。下载的 deb 已在本机重新安装，并再次通过完整功能及中英文体验脚本；安装后的主进程、连接、安全、令牌交换、preload、设置页、语言字典和 MIT 许可证与标签源码一致。服务端下载包与本机安装所用 tarball 字节一致。
+
+下载的 AppImage 同样在 `APPIMAGE_EXTRACT_AND_RUN=1` 模式下再次通过完整功能和中英文体验脚本。两种发布文件的复测均没有 renderer/console 错误，也没有禁用 sandbox。
+
 `v0.1.0` 保留原始基线代码及产物，不属于多平台验收版本。为历史标签触发的旧 CI 在 Linux Electron 沙箱配置处失败；新工作流显式下载运行时并配置沙箱，Windows 测试同时修复了目录末尾反斜杠的参数转义。请以 0.2.0 作为明日验收版本。GitHub 将基线 Windows 文件名中的空格转换为点，基线校验文件已按实际下载名修正，二进制未更换。
 
 ## 环境与限制
