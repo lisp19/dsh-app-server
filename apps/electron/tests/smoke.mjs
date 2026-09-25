@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { _electron } from 'playwright';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'dsh-electron-smoke-'));
-const appDirectory = fileURLToPath(new URL('../', import.meta.url));
+const appDirectory = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const secret = 'smoke-only-secret';
 let infoVersion = 1;
 let expire = false;
