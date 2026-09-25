@@ -93,7 +93,7 @@ npm run pack:server
 npm run build:win
 ```
 
-插件包输出到 `artifacts/`。Linux 交叉构建 NSIS 安装包需要 Wine；Windows 本机构建不需要。Linux 功能与体验检查见 [qa-linux.md](docs/qa-linux.md)，0.1.0 基线记录见 [verification.md](docs/verification.md)。维护与发布方法见 [CONTRIBUTING](CONTRIBUTING.md)。
+插件包输出到 `artifacts/`。Linux 交叉构建 NSIS 安装包需要 Wine；Windows 本机构建不需要。当前验收证据见 [发布验收记录](docs/release-verification.md) 和 [Linux QA](docs/qa-linux.md)，0.1.0 基线记录见 [verification.md](docs/verification.md)。维护与发布方法见 [CONTRIBUTING](CONTRIBUTING.md)。
 
 ## 范围与限制
 
