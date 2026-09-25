@@ -42,6 +42,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Download development Electron runtime
+        run: node node_modules/electron/install.js
       - name: Configure Electron setuid sandbox (Linux)
         if: runner.os == 'Linux'
         run: |
