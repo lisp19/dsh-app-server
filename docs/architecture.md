@@ -1,25 +1,29 @@
 # 架构
 
-DSH App Server 由一个 Electron 客户端、一个 Cordis bundle 和部署适配组成。客户端展示服务器提供的 Harness Web GUI，服务器负责模型、工具、文件、终端和会话持久化。
+DSH App Server 由 Electron 客户端、本项目认证网关和原生 DSH 插件组成。桌面包不包含 DSH；客户端按连接加载服务器提供的原生 Web GUI。模型、工具、文件、终端和会话持久化均由服务器上的 DSH 执行。
 
 | 目录 | 职责 |
 | --- | --- |
-| `apps/electron` | 连接页、认证交换、窗口隔离、加密密码保存和 SSH 转发 |
-| `packages/server` | 已认证客户端发现、远程目录选择和 GUI 控件适配 |
-| `compat` | 固定上游版本的远程设置与固定登录密码补丁 |
+| `apps/electron` | 连接页、内存会话、受保护的 loopback HTTP/WebSocket 桥、加密密码保存和 SSH 转发 |
+| `packages/server` | 固定密码网关、协议发现及通过公开插件 API 提供原生启动认证 |
 | `deploy` | 服务与代理配置模板 |
-| `scripts`、`tests` | 部署管理、集成检查、打包和自动化测试 |
+| `scripts` | 独立安装 npm latest、profile 配置、运行时及服务管理 |
+| `tests` | 单元、集成、打包和发布检查 |
 
 ## 连接与信任边界
 
-客户端先用启动令牌或固定密码交换 Harness cookie，再检查 `/api/app-server/info` 返回的产品标识、协议版本和平台。认证成功后才加载远程 GUI。每次连接创建新的内存会话，断开时清理；远程页面启用 sandbox 和 context isolation，不提供 Node 或本地 preload。
+客户端用固定密码向网关换取本项目的会话 cookie，检查 `/api/app-server/info` 的产品标识、协议版本 `2` 和平台后加载 GUI。网关会话与原生 DSH cookie 独立。客户端每次连接使用新的内存会话，断开时清理；远程页面启用 sandbox 和 context isolation，不提供 Node 或本地 preload。
 
-内置 SSH 在客户端创建临时 loopback 转发端口，HTTP 与 WebSocket 经 SSH 通道访问目标。SSH 主机认证和 app-server 登录互相独立。SSH 信任指纹由客户端主进程保存，密码由操作系统加密；私钥内容不持久化。
+GUI 从每次连接专属的客户端 loopback 桥加载，让原生 GUI 使用本机 origin。桥转发 HTTP 和 WebSocket，不改写上游 JavaScript；每个请求须通过主进程注入的随机私有 header 及 Host/origin 校验。上游 cookie 由连接会话提供，不传给渲染页面。
 
-服务端插件沿用 Harness 的认证与 Host/origin 校验。兼容补丁只应用于指定 profile，支持 `0.1.7-rc.2`，不修改上游源码仓库。升级上游时必须检查补丁、发现协议和完整 GUI 链路。
+网关执行自己的固定密码认证、Host/origin 校验和内存会话管理，再将请求转发到服务器 loopback 上的原生 DSH。插件调用公开的 `connection.authenticatedUrl`，将启动 URL 写入私有临时文件；运行器通过原生认证交换获得 cookie，仅保存在服务器内存。该链路不读取 DSH 认证私有状态，不修改上游 `node_modules`。
 
-## 生命周期与范围
+内置 SSH 在客户端创建临时 loopback 转发端口。SSH 主机认证和 app-server 登录互相独立；主机指纹由主进程保存，密码由操作系统加密，私钥内容不持久化。
 
-关闭客户端不关闭服务器。常驻任务依赖服务器进程持续运行，由 systemd 等进程管理器负责。客户端不自动同步本机目录，也不提供多租户隔离；一个登录身份拥有对应服务器用户的 Harness 权限。
+## 安装与生命周期
 
-更多部署约束见 [服务管理](server-management.md)、[SSH 连接](ssh-transport.md) 和 [安全说明](../SECURITY.md)。
+安装器解析 npm `@deepseek-ai/dsh@latest`，通过官方 CLI 的 `--from-default-profile web` 和 `plugin add` 创建全新 profile。安装目录保存 `installation.json`，记录准确版本、解析时间和安装/profile 锁文件摘要。原生依赖不进入项目根锁文件；桌面与运行环境需要分别审计。
+
+systemd 启动 `scripts/serve.mjs`，由它管理原生 DSH 子进程和网关。原生监听强制为 `127.0.0.1` 动态端口，远程访问只暴露配置的网关地址。缺少必要公开能力或认证失败时，启动失败。
+
+关闭客户端不关闭服务器。客户端不自动同步本机目录，也不提供多租户隔离。升级保留旧配置和 profile，但共享 home 不是数据快照；自定义插件需要人工迁移。更多约束见 [服务管理](server-management.md)、[SSH 连接](ssh-transport.md) 和 [安全说明](../SECURITY.md)。

@@ -11,7 +11,7 @@ these files and any additional original runtime notices. They cover the browser,
 Node.js, and their native third-party components and must not be replaced by
 this npm inventory. The remote Harness server is installed separately.
 
-DeepSeek Harness attribution (compatibility patches and integration):
+DeepSeek Harness attribution (native integration and historical attribution):
 https://github.com/deepseek-ai/deepseek-harness
 MIT License
 

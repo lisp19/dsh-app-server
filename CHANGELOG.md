@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Install unmodified npm `@deepseek-ai/dsh@latest` separately from the project lockfile, recording the resolved version, date and lockfile hashes; compose fresh profiles using the official CLI.
+- Replace upstream package patches with an independent fixed-password gateway and protected desktop loopback transport, keeping native DSH and its GUI unmodified.
+- Keep native authentication cookies in server memory, obtain bootstrap URLs through the public plugin API, and expose gateway discovery protocol 2.
+- Make systemd installation prepare the native runtime automatically. Preserve previous configuration and profiles; copy overlays but require manual migration of custom plugins and backups for shared-home data.
+- Keep DSH out of desktop packages and distinguish the locked desktop license inventory from dynamically installed server dependencies.
+- Require functional validation against the exact resolved upstream version, SSH checks and native release gates; these entries do not claim those gates have passed.
+
 ## 1.0.0
 
 - Prepare the project for open-source distribution under MIT, preserving DeepSeek Harness attribution and third-party copyrights.

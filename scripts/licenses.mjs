@@ -100,7 +100,7 @@ const desktopNotice = [
   'Node.js, and their native third-party components and must not be replaced by',
   'this npm inventory. The remote Harness server is installed separately.',
   '',
-  'DeepSeek Harness attribution (compatibility patches and integration):',
+  'DeepSeek Harness attribution (native integration and historical attribution):',
   'https://github.com/deepseek-ai/deepseek-harness',
   harnessLicense,
   ...sources.packages.slice().sort((a, b) => a.name < b.name ? -1 : 1).flatMap((entry) => [
@@ -135,8 +135,10 @@ does not relicense its dependencies.
 ## DeepSeek Harness
 
 This is an independent integration with [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness),
-not an official DeepSeek product. The compatibility patches in \`compat/\` contain
-modified excerpts from Harness's settings and client-connection packages.
+not an official DeepSeek product. Native Harness is installed separately from npm
+\`latest\` using its official CLI; this project does not patch upstream package files
+or bundle Harness in its desktop application. Historical attribution is retained
+from earlier releases that carried compatibility patches.
 The original copyright is **Copyright (c) 2026 DeepSeek**. The complete permission
 notice and disclaimer are preserved in [licenses/DeepSeek-Harness-LICENSE.txt](licenses/DeepSeek-Harness-LICENSE.txt).
 Harness's republished Cordis foundation packages also retain their individual
@@ -149,6 +151,8 @@ locked third-party npm package entries, including exact versions, declared licen
 expressions, registry archive integrity, optional status, and dependency scopes.
 Scopes can overlap. This inventory is metadata, not a substitute for license texts.
 It includes all locked operating-system variants without requiring them to be installed.
+The independently resolved native DSH installation and profile are outside this
+root lockfile inventory; review their actual dependency trees separately.
 
 | Scope | Entries | Distribution |
 | --- | ---: | --- |
@@ -202,30 +206,22 @@ is MIT; this does not make every bundled third-party component MIT.
 
 ## Server dependencies and other terms
 
-The server's Harness web-app peer dependency includes \`@deepseek-ai/libreoffice-kit\`
-and platform engines under MPL-2.0:
+Native DSH and its profile dependencies are installed dynamically on the server,
+not bundled in the desktop application or the server plugin's npm tarball.
+Each installation records its resolved version and installation/profile lockfile
+hashes in \`installation.json\`. This root inventory is not a license audit of that
+separate installation and makes no fixed claim about its MPL or other components.
 
-| Package | Locked version |
-| --- | --- |
-${mplPackages.map((entry) => `| \`${entry.name}\` | ${entry.version} |`).join('\n')}
-
-They remain separately licensed and are not bundled into the desktop client or
-the server plugin's npm tarball. If redistributing a complete server installation,
-retain their LICENSE, NOTICE, engine third-party notices, and corresponding-source
-information. The package metadata identifies the
+Before redistributing a complete server installation, inspect the exact resolved
+packages, preserve their LICENSE, NOTICE and third-party notices, and provide any
+corresponding source required by their actual terms. For example, if that tree
+includes LibreOffice Kit or platform engines under MPL, review their exact source
+and redistribution materials; see the
 [LibreOffice Kit source repository](https://github.com/deepseek-harness/libreoffice-kit).
-Its README says engine packages contain source recipes and patches in \`sources/\`
-and redistribution notices in \`licenses/\`; preserve the complete selected engine
-package and verify access to the corresponding source for the exact version before
-redistributing a complete server installation. MPL allows a separately licensed larger
-work while preserving obligations for covered files; see the
-[Mozilla FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
-
-Sharp/libvips variants declaring LGPL-3.0-or-later occur in development tooling,
-not this desktop runtime closure. Distributing the tool binaries themselves would
-require a separate review of their license and corresponding-source requirements.
-The lock also contains permissive Apache-2.0, BSD, ISC, Python-2.0, BlueOak-1.0.0,
-Unlicense, WTFPL, and alternative-license expressions; do not relabel these MIT.
+The same separate review applies to build tools if their binaries are redistributed.
+The locked desktop dependencies and the Electron/AppImage runtime still retain all
+of their own third-party terms; removing DSH from this lockfile does not make the
+desktop free of third-party runtime dependencies or relicense it entirely as MIT.
 
 ## Regeneration and release checks
 

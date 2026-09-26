@@ -2,7 +2,7 @@
 
 Use Node.js 24 and install the locked dependencies with `npm ci`. See [development](docs/development.md) for tests and packaging, and [architecture](docs/architecture.md) for component boundaries.
 
-Open a focused pull request with the problem, resulting behavior and validation performed. Include a regression test for behavior changes where practical. Keep local deployments, credentials, logs and generated artifacts out of commits. Upstream Harness changes belong upstream; version-specific integration patches belong in `compat/` and must preserve upstream attribution.
+Open a focused pull request with the problem, resulting behavior and validation performed. Include a regression test for behavior changes where practical. Keep local deployments, credentials, logs and generated artifacts out of commits. Integrate through public upstream CLI/plugin capabilities and this project's gateway and transport boundaries. Do not patch upstream package files, read private authentication state, or copy the native GUI into desktop packages. Preserve upstream attribution.
 
 ## Validation
 
@@ -10,7 +10,7 @@ Run `npm test` for every code change. Authentication, transport, lifecycle and G
 
 ## Releases
 
-1. Update root, client and plugin versions together, refresh `package-lock.json`, and update the changelog and versioned release notes.
+1. Update root, client and plugin versions together, refresh `package-lock.json`, and update the changelog and versioned release notes. Keep DSH outside the root dependency tree; resolve npm `latest` in a fresh installation and retain its version, resolution date and lockfile evidence with functional validation results.
 2. Run the required tests and native platform builds on the candidate commit. Windows must exercise the actual Inno Setup installer through silent installation, upgrade/reinstallation, installed-app launch and uninstallation, including preservation of user data. Review final package contents and third-party license notices; see [packaging](docs/packaging.md).
 3. Tag the reviewed commit with an annotated `v<VERSION>` tag. The release pipeline must pass its test and artifact gates before publishing.
 4. Verify the published asset list, manifest and `SHA256SUMS`. Published versions are immutable; corrections require a new version.

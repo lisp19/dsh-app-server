@@ -4,8 +4,9 @@ The project's own code is [MIT licensed](../LICENSE). Dependencies keep their
 original terms. [Third-party notices](../THIRD_PARTY_NOTICES.md) explain the
 distribution scopes and attribution to DeepSeek Harness.
 
-- `DeepSeek-Harness-LICENSE.txt` preserves the upstream MIT notice for source
-  excerpts in the compatibility patches.
+- `DeepSeek-Harness-LICENSE.txt` preserves the upstream MIT notice and historical
+  attribution from earlier compatibility patches. Current native integration does
+  not modify upstream package files.
 - `npm-inventory.json` is generated from every locked npm package entry. Its
   desktop, server/peer, and development scopes can overlap; it is an inventory,
   not a replacement for the packages' license files.
@@ -54,9 +55,12 @@ the four pinned source archives. Release metadata requires all four and includes
 them, together with `appimage-runtime-sources.json`, in `SHA256SUMS` and
 `release-manifest.json`. Retain these materials when mirroring a release.
 
-The server plugin's npm archive does not bundle its dependencies. A complete
-server redistribution needs an additional review of the separately installed
-Harness packages, including LibreOffice Kit's MPL source and notice obligations.
-Development-only LGPL tools are not part of the desktop runtime. These distinctions
-do not remove obligations if those tools or full server installations are later
-redistributed.
+The server plugin's npm archive does not bundle native DSH. The root inventory does
+not include the dynamically installed npm `latest` runtime or its profile tree.
+Review the exact dependencies recorded by each installation and its
+`installation.json` lockfile hashes separately. A complete server redistribution
+must preserve the resolved packages' licenses and notices and satisfy their actual
+source obligations, including MPL obligations if LibreOffice Kit or relevant
+engines occur in that tree. Redistributing development tools also requires review.
+Desktop packages still contain Electron and SSH/runtime dependencies with their
+own notices; no DSH bundle does not mean no third-party runtime dependencies.

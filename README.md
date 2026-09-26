@@ -2,7 +2,9 @@
 
 在 Windows、Linux 或 macOS 上使用 Electron 客户端，连接运行在 Linux 服务器上的 DeepSeek Harness。模型请求、Agent、终端、文件操作和会话存储都在服务器执行；关闭客户端后，服务器和任务继续运行。
 
-本项目是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的独立社区项目，复用其 Web GUI、认证和运行时。感谢 DeepSeek Harness 及其贡献者；本项目不代表 DeepSeek 官方。支持的上游版本为 `@deepseek-ai/dsh@0.1.7-rc.2`，客户端发现协议为 `1`。
+本项目是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的独立社区项目，加载其原生 Web GUI 和运行时。感谢 DeepSeek Harness 及其贡献者；本项目不代表 DeepSeek 官方。服务安装时解析 npm `@deepseek-ai/dsh@latest`，记录实际版本与锁文件摘要；不选择 `next`，不修改上游包文件。客户端发现协议为 `2`。
+
+桌面包包含本项目客户端、Electron 和 SSH 等运行依赖，不包含 DSH。Linux 服务端独立安装原生 DSH，以本项目的固定密码网关提供远程访问；DSH 本身仅监听 loopback。
 
 ## 下载客户端
 
@@ -20,26 +22,30 @@
 
 ## 安装 Linux 服务端
 
-需要 Node.js 24、Git 和 `patch`；常驻运行还需要用户级 systemd。以下命令以运行服务的普通用户执行：
+需要 Node.js 24、npm、Git 和网络访问；常驻运行还需要用户级 systemd。以下命令以运行服务的普通用户执行，并使用自己有权限访问的本项目仓库：
 
 ```bash
 git clone https://github.com/lisp19/dsh-app-server.git
 cd dsh-app-server
-git checkout v1.0.0
 npm ci
 npm run pack:server
-export DSH_HOME="$HOME/.dsh-app-server"
-npm exec -- dsh --profile app-server --from-default-profile web --dump-config
-npm exec -- dsh plugin --profile app-server add "$PWD/artifacts/dsh-app-server-server-1.0.0.tgz"
+mkdir -p "$HOME/.config/dsh-app-server" "$HOME/workspace"
+cp deploy/server.example.json "$HOME/.config/dsh-app-server/server.json"
 ```
 
-`--from-default-profile web` 仅用于第一次创建 profile。接着按 [服务管理](docs/server-management.md) 创建本机配置并安装用户服务；该步骤会应用远程模型设置和可选固定密码的兼容补丁。单独安装插件不包含这两项部署适配。
+按 [服务管理](docs/server-management.md) 编辑本机配置中的绝对路径，然后执行：
 
-安装、启动和管理服务必须使用同一个用户、`DSH_HOME` 和 profile。上游升级需要重新验证兼容性。
+```bash
+node scripts/server-control.mjs "$HOME/.config/dsh-app-server/server.json" install
+```
+
+`install` 自动安装当时的 npm `latest`，通过官方 CLI 创建新的 `web` profile、添加本项目插件并启动网关，无需手动安装 DSH。未指定 `passwordFile` 时会生成仅当前用户可读的固定密码文件；在本机读取该文件，将密码填写到客户端。
+
+安装、启动和管理服务必须使用同一个用户和 `DSH_HOME`。每次 `install` 都会重新解析 `latest`；日常 `restart` 使用已安装版本。升级前备份配置和完整 DSH home：旧 profile 和上一份配置会保留，但只复制用户 overlay，不自动迁移自定义插件。共享 home 的数据格式可能需要手动迁移，尤其是从较新的 `next` 切回较旧的 `latest` 时。
 
 ## 连接与使用
 
-推荐选择客户端内置的 SSH 传输：填写 SSH 主机、用户名及密码或私钥，核对首次连接的主机指纹；服务器 URL 填写从 SSH 主机访问的地址，例如 `http://127.0.0.1:3080/`。另行填写 app-server 的启动令牌或固定密码。详见 [SSH 连接](docs/ssh-transport.md)。
+推荐选择客户端内置的 SSH 传输：填写 SSH 主机、用户名及密码或私钥，核对首次连接的主机指纹；服务器 URL 填写从 SSH 主机访问的网关地址，例如 `http://127.0.0.1:3080/`。另行填写 app-server 固定密码。详见 [SSH 连接](docs/ssh-transport.md)。
 
 也可以使用 HTTPS 根地址直连。反向代理须保留外部 Host 并支持 WebSocket，服务端须信任该域名；模板见 [Caddyfile](deploy/Caddyfile)。不支持 `/harness/` 等子路径。HTTP 直连会明文传输令牌、会话和模型凭据，仅适用于可信局域网或 VPN。
 
