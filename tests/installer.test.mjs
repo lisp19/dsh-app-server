@@ -7,11 +7,22 @@ import { installUpstream, parseInstallerArgs } from '../scripts/install-upstream
 
 test('installer arguments require explicit absolute locations and reject unknown options', () => {
   assert.deepEqual(parseInstallerArgs(['--directory', '/install', '--home', '/home/dsh', '--plugin', '/plugin.tgz']), {
-    directory: '/install', home: '/home/dsh', pluginTarball: '/plugin.tgz', profile: 'app-server',
+    directory: '/install', home: '/home/dsh', pluginTarball: '/plugin.tgz', profile: 'app-server', channel: 'latest',
   });
   assert.throws(() => parseInstallerArgs(['--directory', 'relative']), /absolute|required/i);
   assert.throws(() => parseInstallerArgs(['--next']), /unknown/i);
   assert.throws(() => parseInstallerArgs(['--profile', '../escape']), /profile|absolute|required/i);
+});
+
+test('installer CLI accepts only latest or next channels', () => {
+  const args = ['--directory', '/install', '--home', '/home/dsh', '--plugin', '/plugin.tgz'];
+  for (const channel of ['latest', 'next']) {
+    assert.equal(parseInstallerArgs([...args, '--channel', channel]).channel, channel);
+  }
+  for (const channel of ['beta', 'LATEST', '', '1.2.3', 'next;echo unsafe']) {
+    assert.throws(() => parseInstallerArgs([...args, '--channel', channel]));
+  }
+  assert.throws(() => parseInstallerArgs([...args, '--channel']), /missing/i);
 });
 
 async function fixture(t) {
@@ -52,6 +63,7 @@ test('resolves latest once, installs exact version, follows official native rang
   const result = await installUpstream(options, { run });
   assert.deepEqual(calls[0].args, ['view', '@deepseek-ai/dsh@latest', 'version', '--json']);
   assert.equal(result.upstreamVersion, '7.2.1-rc.4');
+  assert.equal(result.channel, 'latest');
   assert.equal(result.cli, join(options.directory, 'node_modules/@deepseek-ai/dsh/public/start.js'));
   assert.equal(result.node, process.execPath);
   const manifest = JSON.parse(await readFile(join(options.directory, 'package.json')));
@@ -64,6 +76,39 @@ test('resolves latest once, installs exact version, follows official native rang
   assert.ok(calls.every(({ context }) => context.env.DSH_HOME === options.home));
   assert.equal((await stat(join(options.directory, 'installation.json'))).mode & 0o777, 0o600);
   assert.deepEqual(JSON.parse(await readFile(join(options.directory, 'installation.json'))), result);
+});
+
+test('next resolves once and records the channel without mixing native package tags', async t => {
+  const { options, calls, run } = await fixture(t);
+  const result = await installUpstream({ ...options, channel: 'next' }, { run });
+  assert.deepEqual(calls[0].args, ['view', '@deepseek-ai/dsh@next', 'version', '--json']);
+  assert.equal(calls.filter(({ args }) => args[0] === 'view').length, 1);
+  assert.equal(result.channel, 'next');
+  assert.equal(JSON.parse(await readFile(join(options.directory, 'installation.json'))).channel, 'next');
+  assert.equal(JSON.parse(await readFile(join(options.directory, 'package.json'))).dependencies['@deepseek-ai/dsh'], result.upstreamVersion);
+  const add = calls.find(({ args }) => args.includes('add'));
+  assert.ok(add.args.includes('@deepseek-ai/cordis@9.0.2'));
+  assert.ok(add.args.includes('@deepseek-ai/dsh-host-directory-picker-browse@^7.2.1-rc.4'));
+  assert.ok(add.args.every(arg => !arg.endsWith('@next') && !arg.endsWith('@latest')));
+});
+
+test('invalid channel fails before filesystem writes or network commands', async t => {
+  const { options, calls, run } = await fixture(t);
+  for (const channel of [null, '', 'beta', 'Latest', '1.2.3', {}, ['next']]) {
+    await assert.rejects(installUpstream({ ...options, channel }, { run }), /channel.*latest.*next/i);
+  }
+  assert.equal(calls.length, 0);
+  await assert.rejects(stat(options.directory), { code: 'ENOENT' });
+});
+
+test('a missing next release is reported without falling back to latest', async t => {
+  const { options } = await fixture(t);
+  const calls = [];
+  await assert.rejects(installUpstream({ ...options, channel: 'next' }, {
+    run: async (_, args) => { calls.push(args); throw new Error('registry unavailable'); },
+  }), /registry unavailable/);
+  assert.deepEqual(calls, [['view', '@deepseek-ai/dsh@next', 'version', '--json']]);
+  await assert.rejects(stat(options.directory), { code: 'ENOENT' });
 });
 
 test('does not overwrite an existing installation or patched profile', async (t) => {
