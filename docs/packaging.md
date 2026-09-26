@@ -1,32 +1,32 @@
 # 打包与安装器
 
-发布格式保持为 Windows x64 `.exe`、Linux x64 AppImage/deb，以及 macOS x64/arm64 dmg/zip。构建在对应系统与架构原生执行，以便核对实际 Electron 运行时及其随包许可证。
+支持 Windows x64 `.exe`、Linux x64 AppImage/deb，以及 macOS x64/arm64 dmg/zip。构建在对应系统与架构原生执行。
 
 ## Windows
 
-Windows 使用 Inno Setup，将 Electron 应用目录封装为可安装、升级和卸载的 `.exe`。设计参考 VS Code 官方仓库的 [Inno Setup 脚本](https://github.com/microsoft/vscode/blob/main/build/win32/code.iss) 和 [Windows 构建任务](https://github.com/microsoft/vscode/blob/main/build/gulpfile.vscode.win32.ts)。本项目维护适合自身应用的独立脚本，固定编译器版本并核验下载完整性。
+Windows 使用 Inno Setup 封装 Electron 应用目录，支持安装、升级和卸载。编译器版本及下载摘要固定在许可清单中。参考：[VS Code Inno Setup 脚本](https://github.com/microsoft/vscode/blob/main/build/win32/code.iss)、[Windows 构建任务](https://github.com/microsoft/vscode/blob/main/build/gulpfile.vscode.win32.ts)。
 
-安装标识在 v1.0 及后续版本中保持稳定。v0.x 的 NSIS 安装使用另一套标识，迁移时先退出并卸载旧版，再安装新版，保留应用用户数据。不能把新安装器的覆盖安装等同于对旧版 NSIS 的自动迁移。
+v1.0 起使用稳定的 Inno Setup 安装标识。v0.x 的 NSIS 安装标识不同，迁移时先退出并卸载旧版，再安装新版，保留应用用户数据。
 
-Windows 发布检查须执行实际安装器的静默安装、升级/重装、已安装应用启动与卸载，确认程序、快捷方式和卸载注册清理，同时保留用户数据。这些是发布门槛；通过与否以候选提交的原生 Windows 检查记录为准。
+Windows CI 使用实际安装器检查静默安装、升级/重装、已安装应用启动、卸载及用户数据保留。
 
 ## Linux
 
-AppImage 使用对固定版本打包工具的受控适配，检查预期文件与内容后移除六个旧版 GPL/LGPL 库及自动添加 `--no-sandbox` 的启动行为。工具版本或内容变化必须失败并要求重新审查，不能悄然套用旧适配。Electron sandbox 应保持启用；宿主系统需要满足其运行条件。
+AppImage 打包适配固定版本的构建工具，不附带其六个旧版桌面库，也不添加 `--no-sandbox`。工具版本和内容校验不匹配时构建失败。Electron sandbox 保持启用。
 
-该处理不代表整个 AppImage 或 Electron 运行时都采用 MIT。发布前仍须检查最终 AppImage 的实际文件、启动行为、运行时与随包许可；deb 同样需要最终包检查。
+AppImage 和 Electron 运行时保留各自组件的许可证。
 
 AppImage 运行时包含有独立许可条件的代码，其中 libappimage 的 `light_elf.h` 带有 GPL-2.0-only 声明。发布同时提供 AppImageKit、libappimage、squashfuse 和 XZ 四份对应源码 `.tar.gz`，并提供 [appimage-runtime-sources.json](../licenses/appimage-runtime-sources.json)，记录运行时摘要、源码版本、下载地址、摘要和许可依据。移除旧版桌面库不改变这些运行时代码的许可证。
 
-禁止无特权用户命名空间的 Linux 安全策略可能阻止直接启动 AppImage；这种情况下优先安装 deb，不要添加 `--no-sandbox`。CI 在隔离目录提取 AppImage、配置 setuid sandbox helper 后验证 AppRun；这不代表已验证每种发行版的 FUSE 和用户命名空间策略。
+禁止无特权用户命名空间的 Linux 安全策略可能阻止直接启动 AppImage，此时优先安装 deb，不要添加 `--no-sandbox`。CI 验证提取后的 AppRun 和 setuid sandbox helper；FUSE 和用户命名空间配置取决于宿主发行版。
 
-## 许可证与验收
+## 许可证
 
 本项目自有代码采用 MIT。Inno Setup、Electron、Chromium、AppImage 运行时和其他随包组件各自保留原有许可证。构建工具的许可证、构建中生成或复制的代码、最终运行时文件需要分别核对，不能仅依据 npm 依赖分类判断是否分发。
 
-桌面包不包含 DSH 依赖或 GUI 副本，GUI 在连接后从原生服务获取。根 npm 清单仅覆盖本项目锁定的依赖；服务器安装时解析的 npm `latest` 和新 profile 需要独立许可审查。转发完整服务器安装时，应保留该次解析所有包的版权、许可和适用的对应源码资料。
+桌面包不包含 DSH 依赖或 GUI 副本，GUI 在连接后从原生服务获取。根 npm 清单覆盖本项目锁定的依赖；服务器从所选 npm 渠道安装的 DSH 和 profile 单独审计。分发完整服务器安装时，保留对应依赖的版权、许可和适用的源码资料。
 
-许可材料见 [第三方声明](../THIRD_PARTY_NOTICES.md)。构建命令和功能检查见 [开发指南](development.md)。未经最终产物审查和原生平台检查，不应宣称发布已完成。
+许可材料见 [第三方声明](../THIRD_PARTY_NOTICES.md)，构建命令见 [开发指南](development.md)。
 
 ## 发布资产
 

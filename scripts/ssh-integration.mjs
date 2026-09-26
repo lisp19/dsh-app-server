@@ -46,7 +46,7 @@ const server = new ssh2.Server({ hostKeys: [privateKey] }, client => {
 });
 server.listen(0, '127.0.0.1');
 await once(server, 'listening');
-const report = { checkedAt: new Date().toISOString(), upstreamVersion: host.upstreamVersion, checks: [], pageErrors: [] };
+const report = { checkedAt: new Date().toISOString(), upstreamChannel: host.upstreamChannel, upstreamVersion: host.upstreamVersion, checks: [], pageErrors: [] };
 let application;
 let remote;
 let settings;
@@ -111,7 +111,7 @@ try {
   report.status = 'passed';
   report.limitations = ['Ephemeral ssh2 fixture; system OpenSSH configuration, SSH private-key authentication, and remote-network latency are not exercised.'];
   await remote.screenshot({ path: join(output, 'ssh-native-settings.png') });
-  console.log(`SSH integration passed: real Electron, native settings/RPC/WebSocket, npm latest ${host.upstreamVersion}.`);
+  console.log(`SSH integration passed: real Electron, native settings/RPC/WebSocket, npm ${host.upstreamChannel} ${host.upstreamVersion}.`);
 } catch (error) {
   report.status = 'failed';
   report.error = error.message.replaceAll(host.token, '[redacted]').replaceAll('ssh-fixture-password', '[redacted]');

@@ -7,7 +7,7 @@ DSH App Server 由 Electron 客户端、本项目认证网关和原生 DSH 插�
 | `apps/electron` | 连接页、内存会话、受保护的 loopback HTTP/WebSocket 桥、加密密码保存和 SSH 转发 |
 | `packages/server` | 固定密码网关、协议发现及通过公开插件 API 提供原生启动认证 |
 | `deploy` | 服务与代理配置模板 |
-| `scripts` | 独立安装 npm latest、profile 配置、运行时及服务管理 |
+| `scripts` | 安装所选 npm 渠道、profile 配置、运行时及服务管理 |
 | `tests` | 单元、集成、打包和发布检查 |
 
 ## 连接与信任边界
@@ -22,7 +22,7 @@ GUI 从每次连接专属的客户端 loopback 桥加载，让原生 GUI 使用�
 
 ## 安装与生命周期
 
-安装器解析 npm `@deepseek-ai/dsh@latest`，通过官方 CLI 的 `--from-default-profile web` 和 `plugin add` 创建全新 profile。安装目录保存 `installation.json`，记录准确版本、解析时间和安装/profile 锁文件摘要。原生依赖不进入项目根锁文件；桌面与运行环境需要分别审计。
+安装器解析 npm `@deepseek-ai/dsh` 的 `latest` 或 `next` 标签，通过官方 CLI 的 `--from-default-profile web` 和 `plugin add` 创建全新 profile。渠道由安装选项或本机配置指定，默认 `latest`；配套插件遵循该版本声明的依赖范围。安装目录的 `installation.json` 记录渠道、准确版本、解析时间和安装/profile 锁文件摘要。原生依赖不进入项目根锁文件。
 
 systemd 启动 `scripts/serve.mjs`，由它管理原生 DSH 子进程和网关。原生监听强制为 `127.0.0.1` 动态端口，远程访问只暴露配置的网关地址。缺少必要公开能力或认证失败时，启动失败。
 

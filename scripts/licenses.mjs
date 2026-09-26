@@ -134,11 +134,10 @@ does not relicense its dependencies.
 
 ## DeepSeek Harness
 
-This is an independent integration with [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness),
-not an official DeepSeek product. Native Harness is installed separately from npm
-\`latest\` using its official CLI; this project does not patch upstream package files
-or bundle Harness in its desktop application. Historical attribution is retained
-from earlier releases that carried compatibility patches.
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) provides the
+native GUI, runtime and plugin interfaces. It is installed separately from the
+selected npm channel (\`latest\` or \`next\`) using its official CLI; upstream package
+files are unmodified and are not bundled in the desktop application.
 The original copyright is **Copyright (c) 2026 DeepSeek**. The complete permission
 notice and disclaimer are preserved in [licenses/DeepSeek-Harness-LICENSE.txt](licenses/DeepSeek-Harness-LICENSE.txt).
 Harness's republished Cordis foundation packages also retain their individual

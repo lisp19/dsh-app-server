@@ -18,7 +18,7 @@ export async function startHarness({ sequence = ['success'], successText = 'APP_
   const profile = join(home, 'profiles', 'app-server');
   let metadata;
   try { metadata = JSON.parse(await readFile(join(root, '.integration/latest-installation.json'), 'utf8')); }
-  catch (error) { throw new Error('No prepared latest installation. Run npm run prepare:integration.', { cause: error }); }
+  catch (error) { throw new Error('No prepared upstream installation. Run npm run prepare:integration.', { cause: error }); }
   const installed = join(metadata.home, 'profiles', metadata.profile);
   for (const file of ['src/index.js', 'src/gateway.js', 'cordis.patch.yml', 'package.json']) {
     const current = await readFile(join(root, 'packages/server', file), 'utf8');
@@ -63,7 +63,7 @@ export async function startHarness({ sequence = ['success'], successText = 'APP_
     const cookie = response.headers.get('set-cookie')?.split(';', 1)[0];
     if (!cookie) throw new Error('No authentication cookie');
     return { base, token, cookie, run, home, workspace, child: gateway.child, model, stop,
-      upstreamOrigin: gateway.upstreamOrigin, upstreamVersion: metadata.upstreamVersion,
+      upstreamOrigin: gateway.upstreamOrigin, upstreamVersion: metadata.upstreamVersion, upstreamChannel: metadata.channel ?? 'latest',
       runtimeConfig, gatewayClose: gateway.close };
   } catch (error) { await stop(); throw error; }
 }

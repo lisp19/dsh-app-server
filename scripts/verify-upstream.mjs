@@ -122,7 +122,7 @@ try {
       console.log(`Verified ${result.name}@${result.version} (${result.locations.join(', ')}): ${result.checkedFiles} files match official npm bytes`);
     }
   }
-  const report = { verifiedAt: new Date().toISOString(), profileHasNoPatchedDependencies: true,
+  const report = { verifiedAt: new Date().toISOString(), upstreamChannel: host.upstreamChannel, profileHasNoPatchedDependencies: true,
     runtimeProfileChecked: true, locks, packages };
   const reportPath = join(root, 'artifacts/screenshots/upstream-integrity.json');
   await mkdir(dirname(reportPath), { recursive: true });

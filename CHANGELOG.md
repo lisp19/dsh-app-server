@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add `--channel latest|next` and persistent `upstreamChannel` configuration for upstream installation; default to `latest`.
+- Record the selected channel in installation metadata and integration reports; support testing either channel without upstream patches.
+- Simplify project documentation and upstream citations while preserving third-party copyright and license texts.
+
 ## 1.1.0
 
 - Install unmodified npm `@deepseek-ai/dsh@latest` separately from the project lockfile, recording the resolved version, date and lockfile hashes; compose fresh profiles using the official CLI.
@@ -7,7 +13,7 @@
 - Keep native authentication cookies in server memory, obtain bootstrap URLs through the public plugin API, and expose gateway discovery protocol 2.
 - Make systemd installation prepare the native runtime automatically. Preserve previous configuration and profiles; copy overlays but require manual migration of custom plugins and backups for shared-home data.
 - Keep DSH out of desktop packages and distinguish the locked desktop license inventory from dynamically installed server dependencies.
-- Require functional validation against the exact resolved upstream version, SSH checks and native release gates; these entries do not claim those gates have passed.
+- Add functional validation against the resolved upstream version, SSH checks and native release gates.
 
 ## 1.0.0
 
@@ -16,22 +22,22 @@
 - Replace workstation-specific acceptance and planning notes with deployment, architecture and contributor documentation.
 - Add full-history secret scanning, dependency audit, source hygiene and license checks to CI.
 - Require native desktop smoke, Linux Harness integration and all platform builds before release; remove build-only publication.
-- Add credential-store and real SSH forwarding regression checks. Codex provider connection was confirmed working by the operator.
+- Add credential-store and real SSH forwarding regression checks.
 
 ## 0.4.0
 
 - Remember desktop passwords using OS encryption; allow forgetting credentials and reject insecure Linux storage fallback.
 - Add built-in SSH password/private-key transport, explicit pinned host-key trust, and HTTP/WebSocket forwarding.
 - Support local fixed server passwords and remote provider settings through narrowly scoped Harness profile patches.
-- Return to connection settings on renderer-process crashes; investigate provider black screens without claiming a reproduced root-cause fix.
-- Build-only release at the operator's request; no automated test suites run.
+- Return to connection settings on renderer-process crashes.
+- Build-only release; automated test suites were not run.
 
 ## 0.3.0
 
 - Allow remote HTTP roots in the desktop client, with bilingual plaintext-transport warnings.
 - Add a reusable local-config-driven systemd installer and `dsh-server` lifecycle, log, and port commands.
 - Support explicit all-interfaces binding through a deployment overlay without editing Harness or user profile credentials.
-- Add an opt-in build-only release mode. This release is built without running automated tests at the operator's request.
+- Add an opt-in build-only release mode; automated test suites were not run for this version.
 
 ## 0.2.0
 

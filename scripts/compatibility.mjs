@@ -1,4 +1,4 @@
-/** Real Electron compatibility against unmodified npm latest; fake credentials only. */
+/** Real Electron compatibility against the selected npm channel; fake credentials only. */
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -10,7 +10,7 @@ const output = join(root, 'artifacts/screenshots');
 await mkdir(output, { recursive: true });
 const host = await startHarness({ gatewayHost: '0.0.0.0' });
 const fakeKey = 'sk-compatibility-fixture-not-a-real-provider-key';
-const report = { checkedAt: new Date().toISOString(), upstreamVersion: host.upstreamVersion, checks: [], pageErrors: [], failedRequests: [] };
+const report = { checkedAt: new Date().toISOString(), upstreamChannel: host.upstreamChannel, upstreamVersion: host.upstreamVersion, checks: [], pageErrors: [], failedRequests: [] };
 let application;
 let remote;
 let restarted;
@@ -43,13 +43,23 @@ async function connect(base) {
 async function openModels() {
   const welcome = remote.getByRole('button', { name: 'Continue', exact: true });
   if (await welcome.isVisible()) await welcome.click();
-  await remote.getByRole('button', { name: 'Settings', exact: true }).click();
-  await remote.getByRole('button', { name: 'Models', exact: true }).click();
-  await remote.getByRole('button', { name: 'Add provider', exact: true }).waitFor();
+  const settings = remote.getByRole('button', { name: 'Settings', exact: true });
+  const models = remote.getByRole('button', { name: 'Models', exact: true });
+  await settings.click();
+  try {
+    await models.click({ timeout: 5000 });
+  } catch (error) {
+    // Newer native GUIs can restore their initial workspace route after Settings
+    // first opens. Reopen once only when that navigation removed the Models tab.
+    if (error.name !== 'TimeoutError' || await models.isVisible()) throw error;
+    await settings.click();
+    await models.click();
+  }
+  await remote.getByRole('button', { name: /^Add (?:model )?provider$/ }).waitFor();
 }
 
 async function assertStored(stage) {
-  await remote.getByRole('button', { name: 'Edit openai', exact: true }).click();
+  await remote.getByRole('button', { name: /^Edit openai(?: \(openai\))?$/i }).click();
   const key = remote.getByRole('textbox', { name: 'API key', exact: true });
   await key.waitFor();
   await remote.getByPlaceholder('Configured — enter a new value to replace', { exact: true }).waitFor({ timeout: 15000 });
@@ -64,11 +74,11 @@ try {
   await connect(host.base);
   report.checks.push('Electron uses an authenticated secure localhost bridge to the non-loopback gateway');
   await openModels();
-  await remote.getByRole('button', { name: 'Add provider', exact: true }).click();
+  await remote.getByRole('button', { name: /^Add (?:model )?provider$/ }).click();
   await remote.getByRole('combobox', { name: 'Provider', exact: true }).selectOption('openai');
   await remote.getByRole('textbox', { name: 'API key', exact: true }).fill(fakeKey);
   await remote.getByRole('button', { name: 'Apply', exact: true }).click();
-  await remote.getByText('Saved openai.', { exact: true }).waitFor({ timeout: 20000 });
+  await remote.getByText(/^Saved openai(?: \(openai\))?\.$/i).waitFor({ timeout: 20000 });
   report.checks.push('Native Models UI saved a fake provider credential');
   await assertStored('save');
   await remote.reload();
@@ -88,7 +98,7 @@ try {
   assert.deepEqual(report.failedRequests, [], 'Native UI requests must not fail');
   report.status = 'passed';
   report.limitations = ['This acceptance uses direct TCP over a non-loopback interface; SSH tunneling and real provider authentication are not exercised.'];
-  console.log(`Compatibility passed for npm latest ${host.upstreamVersion}: provider save, reload, native restart, non-loopback Electron bridge.`);
+  console.log(`Compatibility passed for npm ${host.upstreamChannel} ${host.upstreamVersion}: provider save, reload, native restart, non-loopback Electron bridge.`);
 } catch (error) {
   report.status = 'failed';
   report.error = safe(error.message);
