@@ -5,6 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
+  schedule:
+    - cron: '17 9 * * 1'
 
 permissions:
   contents: read
@@ -110,8 +112,17 @@ jobs:
           xvfb-run -a node apps/electron/tests/smoke.mjs
       - run: npm run prepare:integration
         if: runner.os == 'Linux'
+      - name: Compare installed native sources with official npm artifacts
+        if: runner.os == 'Linux'
+        run: node scripts/verify-upstream.mjs
       - run: npm run test:integration
         if: runner.os == 'Linux'
+      - name: Exercise native DSH through built-in SSH transport
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/ssh-integration.mjs
+      - name: Accept current npm latest without upstream patches
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/compatibility.mjs
       - name: Packaged Linux smoke, functional and experience checks
         if: runner.os == 'Linux'
         env:
