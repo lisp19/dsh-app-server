@@ -37,7 +37,11 @@ export async function createLocalBridge({ upstreamURL, getCookies, signal }) {
     if (result.location) {
       const target = new URL(result.location, upstream);
       if (target.origin !== upstream.origin || target.username || target.password) throw new Error('External redirect');
-      result.location = new URL(target.pathname + target.search + target.hash, local).href;
+      const destination = new URL(local);
+      destination.pathname = target.pathname;
+      destination.search = target.search;
+      destination.hash = target.hash;
+      result.location = destination.href;
     }
     // Refresh can trigger navigation outside normal HTTP redirect handling.
     delete result.refresh;
