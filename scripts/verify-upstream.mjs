@@ -1,9 +1,11 @@
 /** Compare the prepared native installation with integrity-verified official npm archives. */
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
+import { startHarness } from './harness.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const metadata = JSON.parse(await readFile(join(root, '.integration/latest-installation.json'), 'utf8'));
@@ -33,9 +35,8 @@ async function fetchRegistry(input) {
   return response;
 }
 
-async function verifyPackage(shortName) {
+async function verifyPackage(shortName, directory, locations) {
   const name = `@deepseek-ai/${shortName}`;
-  const directory = join(metadata.installation, 'node_modules', name);
   const manifest = JSON.parse(await readFile(join(directory, 'package.json'), 'utf8'));
   if (manifest.name !== name || typeof manifest.version !== 'string') throw new Error(`Invalid installed manifest: ${name}`);
   const published = await (await fetchRegistry(`https://registry.npmjs.org/${encodeURIComponent(name)}/${encodeURIComponent(manifest.version)}`)).json();
@@ -67,17 +68,66 @@ async function verifyPackage(shortName) {
     offset += 512 + Math.ceil(size / 512) * 512;
   }
   if (!checkedFiles) throw new Error(`Archive contained no verified files: ${name}`);
-  return { name, version: manifest.version, integrity, checkedFiles, installedBytesMatchPublished: true };
+  return { name, version: manifest.version, locations, integrity, checkedFiles, installedBytesMatchPublished: true };
 }
 
-const packages = [];
-for (const name of ['dsh', 'dsh-client-connection', 'dsh-client-ui-settings', 'dsh-host-webserver', 'dsh-host-frontend-static', 'dsh-web-app']) {
-  const result = await verifyPackage(name);
-  packages.push(result);
-  console.log(`Verified ${result.name}@${result.version}: ${result.checkedFiles} files match official npm bytes`);
+async function packageDirectory(directory) {
+  try {
+    await readFile(join(directory, 'package.json'));
+    return await realpath(directory);
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
 }
-const report = { verifiedAt: new Date().toISOString(), profileHasNoPatchedDependencies: true, locks, packages };
-const reportPath = join(root, 'artifacts/screenshots/upstream-integrity.json');
-await mkdir(dirname(reportPath), { recursive: true });
-await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
-console.log('Saved sanitized report: artifacts/screenshots/upstream-integrity.json');
+
+async function resolvedPackage(anchor, name) {
+  const require = createRequire(join(anchor, 'package.json'));
+  try { return await realpath(dirname(require.resolve(`${name}/package.json`))); }
+  catch (error) {
+    if (error.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw error;
+    for (const search of require.resolve.paths(name) ?? []) {
+      const directory = await packageDirectory(join(search, name));
+      if (directory) return directory;
+    }
+    throw error;
+  }
+}
+
+// Boot the current prepared native generation to establish its real public
+// module-resolution paths, including upstream's profile fallback symlinks.
+// startHarness also verifies the installed adapter matches current source.
+const host = await startHarness();
+try {
+  const runtimeProfile = join(host.home, 'profiles/app-server');
+  const packages = [];
+  for (const name of ['dsh', 'dsh-client-connection', 'dsh-client-ui-settings', 'dsh-host-webserver', 'dsh-host-frontend-static', 'dsh-web-app']) {
+    const candidates = new Map();
+    const add = (directory, role) => {
+      if (!directory) return;
+      const roles = candidates.get(directory) ?? new Set();
+      roles.add(role);
+      candidates.set(directory, roles);
+    };
+    add(await packageDirectory(join(metadata.installation, 'node_modules/@deepseek-ai', name)), 'installation');
+    if (name !== 'dsh') {
+      add(await packageDirectory(join(profile, 'node_modules/@deepseek-ai', name)), 'prepared-profile-local');
+      add(await packageDirectory(join(dirname(profile), 'node_modules/@deepseek-ai', name)), 'prepared-profile-shared-fallback');
+      add(await resolvedPackage(runtimeProfile, `@deepseek-ai/${name}`), 'runtime-profile-resolution');
+    }
+    if (!candidates.size) throw new Error(`No installed package to verify: ${name}`);
+    for (const [directory, locations] of candidates) {
+      const result = await verifyPackage(name, directory, [...locations]);
+      packages.push(result);
+      console.log(`Verified ${result.name}@${result.version} (${result.locations.join(', ')}): ${result.checkedFiles} files match official npm bytes`);
+    }
+  }
+  const report = { verifiedAt: new Date().toISOString(), profileHasNoPatchedDependencies: true,
+    runtimeProfileChecked: true, locks, packages };
+  const reportPath = join(root, 'artifacts/screenshots/upstream-integrity.json');
+  await mkdir(dirname(reportPath), { recursive: true });
+  await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
+  console.log('Saved sanitized report: artifacts/screenshots/upstream-integrity.json');
+} finally {
+  await host.stop();
+}
