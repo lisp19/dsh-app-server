@@ -1,4 +1,4 @@
-/** Install unmodified npm latest and compose a fresh profile using DSH's public CLI. */
+/** Install an unmodified npm channel and compose a fresh profile using DSH's public CLI. */
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile, lstat, realpath } from 'node:fs/promises';
@@ -9,7 +9,20 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const nativeAdditions = ['@deepseek-ai/dsh-host-directory-picker-browse', '@deepseek-ai/dsh-client-ui-directory-picker-browse'];
 
+export function validateChannel(channel = 'latest') {
+  if (!['latest', 'next'].includes(channel)) throw new Error('channel must be latest or next');
+  return channel;
+}
+
+/** Optional channel override shared by deployment and integration entry points. */
+export function parseChannelOption(args) {
+  if (!args.length) return undefined;
+  if (args.length !== 2 || args[0] !== '--channel') throw new Error('Expected --channel latest|next');
+  return validateChannel(args[1]);
+}
+
 function validate(options) {
+  validateChannel(options.channel);
   for (const key of ['directory', 'home', 'pluginTarball']) {
     if (typeof options[key] !== 'string' || !isAbsolute(options[key])) throw new Error(`${key} is required and must be an absolute path`);
   }
@@ -17,8 +30,8 @@ function validate(options) {
 }
 
 export function parseInstallerArgs(args) {
-  const options = { profile: 'app-server' };
-  const keys = { '--directory': 'directory', '--home': 'home', '--profile': 'profile', '--plugin': 'pluginTarball' };
+  const options = { profile: 'app-server', channel: 'latest' };
+  const keys = { '--directory': 'directory', '--home': 'home', '--profile': 'profile', '--plugin': 'pluginTarball', '--channel': 'channel' };
   for (let index = 0; index < args.length; index += 2) {
     const key = keys[args[index]];
     if (!key) throw new Error(`Unknown option: ${args[index]}`);
@@ -50,8 +63,8 @@ async function lockMetadata(path) {
   return { path, sha256: createHash('sha256').update(bytes).digest('hex') };
 }
 
-export async function installUpstream({ directory, home, profile = 'app-server', pluginTarball, onLog }, { run = runCommand } = {}) {
-  validate({ directory, home, profile, pluginTarball });
+export async function installUpstream({ directory, home, profile = 'app-server', pluginTarball, channel = 'latest', onLog }, { run = runCommand } = {}) {
+  validate({ directory, home, profile, pluginTarball, channel });
   directory = resolve(directory);
   home = resolve(home);
   pluginTarball = resolve(pluginTarball);
@@ -68,8 +81,8 @@ export async function installUpstream({ directory, home, profile = 'app-server',
   }
   const env = { ...process.env, DSH_HOME: home, PATH: join(projectRoot, 'node_modules', '.bin') + delimiter + (process.env.PATH || '') };
   const context = { cwd: projectRoot, env, onLog };
-  const upstreamVersion = JSON.parse(await run('npm', ['view', '@deepseek-ai/dsh@latest', 'version', '--json'], { ...context, quiet: true }));
-  if (typeof upstreamVersion !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(upstreamVersion)) throw new Error('npm latest returned an invalid upstream version');
+  const upstreamVersion = JSON.parse(await run('npm', ['view', `@deepseek-ai/dsh@${channel}`, 'version', '--json'], { ...context, quiet: true }));
+  if (typeof upstreamVersion !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(upstreamVersion)) throw new Error(`npm ${channel} returned an invalid upstream version`);
   const resolvedAt = new Date().toISOString();
   await mkdir(dirname(directory), { recursive: true });
   await mkdir(directory, { mode: 0o700 });
@@ -77,7 +90,7 @@ export async function installUpstream({ directory, home, profile = 'app-server',
   await run('npm', ['install', '--no-audit', '--no-fund'], { ...context, cwd: directory });
   const packageDirectory = join(directory, 'node_modules', '@deepseek-ai', 'dsh');
   const manifest = JSON.parse(await readFile(join(packageDirectory, 'package.json'), 'utf8'));
-  if (manifest.version !== upstreamVersion) throw new Error('Installed upstream version does not match npm latest resolution');
+  if (manifest.version !== upstreamVersion) throw new Error(`Installed upstream version does not match npm ${channel} resolution`);
   const bin = typeof manifest.bin === 'string' ? manifest.bin : manifest.bin?.dsh;
   if (typeof bin !== 'string') throw new Error('Upstream package does not declare a public dsh executable');
   const cli = await realpath(resolve(packageDirectory, bin));
@@ -93,7 +106,7 @@ export async function installUpstream({ directory, home, profile = 'app-server',
   });
   await run(process.execPath, [cli, 'plugin', '--profile', profile, 'add', ...additions, pluginTarball], { ...context, cwd: directory });
   const result = {
-    cli, node: process.execPath, home, profile, upstreamVersion, resolvedAt, installation: directory,
+    cli, node: process.execPath, home, profile, channel, upstreamVersion, resolvedAt, installation: directory,
     locks: {
       installation: await lockMetadata(join(directory, 'package-lock.json')),
       profile: await lockMetadata(join(profileDirectory, 'pnpm-lock.yaml')),
