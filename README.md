@@ -6,6 +6,8 @@
 
 桌面包包含本项目客户端、Electron 和 SSH 等运行依赖，不包含 DSH。Linux 服务端独立安装原生 DSH，以本项目的固定密码网关提供远程访问；DSH 本身仅监听 loopback。
 
+已验收 npm `latest`：DSH `0.1.5-rc.3`（2026-09-26）。这是验证记录，不是安装版本约束。兼容性取决于上游公开的 CLI、Cordis 插件和连接接口；未来破坏性变更仍可能需要适配，持续检查见 [开发指南](docs/development.md)。
+
 ## 下载客户端
 
 从 [Releases](https://github.com/lisp19/dsh-app-server/releases) 下载安装包，并核对随版本提供的 `SHA256SUMS`。
@@ -18,7 +20,7 @@
 
 安装包未配置发行者签名，macOS 使用 ad-hoc 签名且未经公证。请遵循系统提示和组织的软件安装政策。
 
-从 Windows v0.x 升级时，先退出客户端并卸载旧版 NSIS 安装，再安装 v1.0.0。卸载时保留用户数据；新旧安装器使用不同的安装标识。v1.0 起使用稳定的 Inno Setup 标识进行后续升级。打包方式和验证要求见 [打包说明](docs/packaging.md)。
+从 Windows v0.x 升级时，先退出客户端并卸载旧版 NSIS 安装，再安装当前版本。卸载时保留用户数据；新旧安装器使用不同的安装标识。v1.0 起使用稳定的 Inno Setup 标识进行后续升级。打包方式和验证要求见 [打包说明](docs/packaging.md)。
 
 ## 安装 Linux 服务端
 

@@ -11,8 +11,11 @@ npm run licenses:check
 npm run scan:secrets
 npm run test:smoke --workspace apps/electron
 npm run prepare:integration
+node scripts/verify-upstream.mjs
 npm run test:integration
+node scripts/ssh-integration.mjs
 npm run test:electron
+node scripts/compatibility.mjs
 ```
 
 `check:repository` 检查仓库发布约束，`licenses:check` 检查第三方许可清单。`scan:secrets` 使用固定版本的 Gitleaks 扫描全部可达 Git 历史，需要 Linux x64；扫描前应获取完整历史。
@@ -22,6 +25,8 @@ npm run test:electron
 原生安装与 profile 的依赖树独立于根锁文件，应分别检查许可证和安全审计结果。不得用 `next` 或测试用固定版本替代用户选择的 `latest`，也不得通过修改上游包文件来让集成测试通过。安装探针成功只代表安装完成，实际功能结果须对应本次解析的准确版本和候选提交记录。
 
 单元检查覆盖连接设置、认证、隔离、密码保存和 SSH 行为。Electron smoke 检查实际桌面窗口。Harness 集成检查覆盖服务端认证、会话、模型回合与工具；Electron 集成检查覆盖 GUI 流式消息、目录浏览、断线恢复及客户端退出后的任务与历史。真实供应商授权和外部网络不由确定性模型测试代表。
+
+`compatibility.mjs` 使用非回环地址连接真实原生 GUI，验证供应商测试凭据保存、刷新和服务端重启后的持久化。`verify-upstream.mjs` 对照官方 npm 归档校验关键原生包文件及安装锁摘要。验证报告和截图保存到 `artifacts/screenshots/`；Actions 每周重新解析 `latest` 并运行同一组验收，兼容性退化会使流水线失败，而不会自动打补丁或回退旧版本。
 
 ## 打包
 
