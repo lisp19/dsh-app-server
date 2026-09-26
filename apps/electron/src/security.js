@@ -3,7 +3,7 @@ export class ConnectionError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 
-/** Accept a root HTTPS origin, or plain HTTP on an explicit loopback host. */
+/** Accept root HTTP(S) origins without credentials, paths, or token queries. */
 export function parseServerURL(input) {
   if (typeof input !== 'string' || input.length > 2048) throw new ConnectionError('invalidUrl');
   const value = input.trim();
@@ -11,7 +11,6 @@ export function parseServerURL(input) {
   let url;
   try { url = new URL(value); } catch { throw new ConnectionError('invalidUrl'); }
   if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new ConnectionError('invalidUrl');
-  if (url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new ConnectionError('insecureUrl');
   // Reject numeric aliases which WHATWG URL silently converts into loopback.
   const rawHost = value.match(/^https?:\/\/(\[[^\]]+\]|[^:/]+)(?::\d+)?\/?$/i)?.[1]?.toLowerCase();
   if (!rawHost || (url.protocol === 'http:' && rawHost !== url.hostname)) throw new ConnectionError('invalidUrl');

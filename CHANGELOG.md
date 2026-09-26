@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Allow remote HTTP roots in the desktop client, with bilingual plaintext-transport warnings.
+- Add a reusable local-config-driven systemd installer and `dsh-server` lifecycle, log, and port commands.
+- Support explicit all-interfaces binding through a deployment overlay without editing Harness or user profile credentials.
+- Add an opt-in build-only release mode. This release is built without running automated tests at the operator's request.
+
 ## 0.2.0
 
 - Add Linux AppImage/deb and macOS Intel/Apple Silicon dmg/zip packaging alongside Windows NSIS.

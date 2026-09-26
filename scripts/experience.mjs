@@ -52,7 +52,7 @@ try {
     for (const [url, code] of [
       ['https://server.example/path', 'invalidUrl'],
       ['https://server.example/?token=redacted', 'invalidUrl'],
-      ['http://server.example/', 'insecureUrl'],
+      ['http://server.example/path', 'invalidUrl'],
     ]) {
       await page.locator('#server').fill(url);
       await page.locator('#token').fill('qa-placeholder');
@@ -63,7 +63,7 @@ try {
       assert.equal(await page.locator('#connect').isEnabled(), true);
       assert.equal(await page.locator('#status').getAttribute('role'), 'status');
     }
-    report.checks.push(`${locale}: localized path/query/insecure URL errors; token cleared; form reusable`);
+    report.checks.push(`${locale}: localized HTTP/HTTPS path/query errors; token cleared; form reusable`);
 
     for (const [name, width, height] of [['normal', 620, 740], ['minimum', 480, 640]]) {
       await application.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setSize(...size), [width, height]);

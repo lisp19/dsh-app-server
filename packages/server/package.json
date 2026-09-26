@@ -1,6 +1,6 @@
 {
   "name": "@dsh-app-server/server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Remote Electron access to a Linux DeepSeek Harness Web profile",
   "type": "module",
   "license": "MIT",

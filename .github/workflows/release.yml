@@ -3,6 +3,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      build_only:
+        description: Build and publish without running tests (document this in release notes)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -10,6 +15,8 @@ permissions:
 jobs:
   build:
     uses: ./.github/workflows/verify.yml
+    with:
+      build_only: ${{ inputs.build_only == true }}
   publish:
     needs: build
     runs-on: ubuntu-24.04

@@ -42,9 +42,13 @@ dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.co
 
 修改 [Caddyfile](deploy/Caddyfile) 中的域名并部署到已有 Caddy。客户端填写 `https://harness.example.com/`。代理必须保留外部 Host，并支持 WebSocket；不要把 Host 改写为 `127.0.0.1:3080`。Caddy 的 [reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy) 支持这两项。使用有效的系统信任证书，客户端不会跳过证书验证。
 
-只支持根地址，不支持 `/harness/` 等子路径。远程明文 HTTP 地址会被拒绝；HTTP 只允许明确的 loopback 地址。不要使用 `dsh web --host 0.0.0.0`，该参数在此 Harness 版本中被拒绝。
+只支持根地址，不支持 `/harness/` 等子路径。v0.3.0 起客户端允许远程 HTTP；HTTP 明文传输令牌和会话内容，仅用于可信局域网或 VPN。互联网访问仍应使用 HTTPS 或 SSH 隧道。不要使用 `dsh web --host 0.0.0.0`，该参数在此 Harness 版本中被拒绝；全网监听通过部署 overlay 配置。
 
 需要常驻运行时，参考 [systemd 用户服务](deploy/dsh-app-server.service)。启动、安装插件和运行服务必须使用同一个账户和 `DSH_HOME`。关闭 SSH 登录终端可能结束前台服务；客户端独立生命周期不替代服务器进程托管。
+
+### systemd 自动运行与端口查询
+
+公共安装和管理脚本为 [server-control.mjs](scripts/server-control.mjs)，配置格式见 [server.example.json](deploy/server.example.json)。完整部署步骤和 `dsh-server` 操作见 [服务管理](docs/server-management.md)。配置、生成的 unit 和监听 overlay 留在机器本地，不要提交包含本机路径或凭据的文件。
 
 ## Electron 客户端
 

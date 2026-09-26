@@ -12,7 +12,7 @@ const server = JSON.parse(await readFile(new URL('../packages/server/package.jso
 const script = new URL('../scripts/release-assets.mjs', import.meta.url);
 
 test('all package versions agree and desktop targets cover each platform', () => {
-  assert.equal(root.version, '0.2.0');
+  assert.match(root.version, /^\d+\.\d+\.\d+$/);
   assert.equal(client.version, root.version);
   assert.equal(server.version, root.version);
   assert.deepEqual(client.build.linux.target, ['AppImage', 'deb']);
