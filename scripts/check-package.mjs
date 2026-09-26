@@ -1,6 +1,6 @@
 /** Check the unpacked directory used to produce native installers. */
 import { readFile, stat } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { resolve, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listPackage, extractFile } from '@electron/asar';
 
@@ -27,7 +27,9 @@ if (files.some(name => /(?:^|\/)(?:\.acceptance|\.integration|\.env|login-passwo
 const inventory = JSON.parse(await readFile(join(root, 'licenses/npm-inventory.json'), 'utf8'));
 const reviewed = new Set(inventory.packages.filter(entry => entry.scopes.includes('desktop-runtime')).map(entry => `${entry.name}@${entry.version}`));
 for (const filename of files.filter(name => /\/node_modules\/(?:@[^/]+\/)?[^/]+\/package.json$/.test(name))) {
-  const manifest = JSON.parse(extractFile(archive, filename.replace(/^\//, '')).toString());
+  // ASAR splits directory names using the host's path separator, even though
+  // the normalized list above intentionally uses '/' for platform-neutral checks.
+  const manifest = JSON.parse(extractFile(archive, normalize(filename.replace(/^\//, ''))).toString());
   if (!reviewed.has(`${manifest.name}@${manifest.version}`)) throw new Error(`Unreviewed bundled dependency: ${manifest.name}@${manifest.version}`);
 }
 console.log('Packaged MIT, npm, Electron and Chromium notices match their sources; no Harness runtime/local profile bundled.');
