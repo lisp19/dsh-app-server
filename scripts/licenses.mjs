@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const read = (name) => fs.readFileSync(path.join(root, name), 'utf8').replaceAll('\r\n', '\n');
 const lock = JSON.parse(read('package-lock.json'));
 const sources = JSON.parse(read('licenses/desktop-runtime-sources.json'));
 const buildSources = JSON.parse(read('licenses/build-distributed-sources.json'));
