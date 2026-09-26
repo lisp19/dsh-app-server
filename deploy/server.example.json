@@ -3,6 +3,7 @@
   "home": "/home/operator/.dsh-app-server",
   "workspace": "/home/operator/workspace",
   "profile": "app-server",
+  "upstreamChannel": "latest",
   "service": "dsh-app-server.service",
   "host": "0.0.0.0",
   "passwordFile": "/home/operator/.config/dsh-app-server/login-password",

@@ -6,12 +6,15 @@ import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseChannelOption } from './install-upstream.mjs';
 
 const [configArgument, action = 'status', ...extra] = process.argv.slice(2);
-if (!configArgument || extra.length || !['install', 'start', 'stop', 'restart', 'status', 'port', 'logs'].includes(action)) {
-  console.error('Usage: node scripts/server-control.mjs /absolute/path/server.json install|start|stop|restart|status|port|logs');
+if (!configArgument || !['install', 'start', 'stop', 'restart', 'status', 'port', 'logs'].includes(action)) {
+  console.error('Usage: node scripts/server-control.mjs /absolute/path/server.json install [--channel latest|next] | start|stop|restart|status|port|logs');
   process.exit(2);
 }
+if (action !== 'install' && extra.length) throw new Error('--channel is only supported for install');
+parseChannelOption(extra);
 if (process.platform !== 'linux') throw new Error('This command requires Linux and user systemd.');
 const configPath = resolve(configArgument);
 let config = JSON.parse(await readFile(configPath, 'utf8'));
@@ -43,7 +46,7 @@ const shellQuote = value => `'${value.replaceAll("'", "'\\''")}'`;
 
 if (action === 'install') {
   for (const key of ['node', 'workspace']) await stat(config[key]);
-  run(config.node, [fileURLToPath(new URL('./configure-profile.mjs', import.meta.url)), configPath]);
+  run(config.node, [fileURLToPath(new URL('./configure-profile.mjs', import.meta.url)), configPath, ...extra]);
   config = JSON.parse(await readFile(configPath, 'utf8'));
   const localDirectory = dirname(configPath);
   const unit = join(localDirectory, config.service);
