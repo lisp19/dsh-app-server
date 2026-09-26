@@ -65,6 +65,20 @@ test('URL alone, hostile origins, host aliases, absolute URLs and fetch sites ar
   assert.equal(received.length, 0);
 });
 
+test('reused upstream connections do not accumulate close listeners', async t => {
+  const { bridge, headers } = await fixture(t);
+  const warnings = [];
+  const listener = warning => { if (warning.name === 'MaxListenersExceededWarning') warnings.push(warning); };
+  process.on('warning', listener);
+  t.after(() => process.off('warning', listener));
+  for (let index = 0; index < 30; index++) {
+    const response = await fetch(bridge.url, { headers });
+    assert.equal(response.status, 200);
+    await response.arrayBuffer();
+  }
+  assert.deepEqual(warnings, []);
+});
+
 test('same-origin redirects become local, external redirects are blocked, auth failures survive', async t => {
   const { bridge, headers } = await fixture(t);
   const response = await fetch(bridge.url + 'redirect', { headers, redirect: 'manual' });

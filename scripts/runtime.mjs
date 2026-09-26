@@ -63,17 +63,14 @@ export async function startRuntime(config, { password, env = {}, onLog = () => {
   let spawnError;
   let gateway;
   let stopping;
-  let output = '';
   child.on('error', error => { spawnError = error; });
-  const capture = chunk => {
-    output = (output + chunk.toString()).slice(-16000);
-    // Native logs can include launch credentials. Never forward startup URLs.
-  };
+  // Drain native output without retaining or forwarding launch credentials.
+  const capture = () => {};
   child.stdout.on('data', capture);
   child.stderr.on('data', capture);
   const closed = new Promise(resolve => child.once('close', code => {
     exited = true;
-    if (gateway && !stopping) { void gateway.close(); onExit(code ?? 1); }
+    if (gateway && !stopping) { void close().then(() => onExit(code ?? 1)); }
     resolve();
   }));
   const close = () => stopping ??= (async () => {
@@ -110,12 +107,12 @@ export async function startRuntime(config, { password, env = {}, onLog = () => {
       host: config.host ?? '127.0.0.1', port: config.port ?? 0, trustedHosts: config.trustedHosts ?? [],
       upstreamVersion: config.upstreamVersion ?? bootstrap.upstreamVersion,
     });
+    if (exited) throw new Error('Native DSH exited while the gateway was starting');
     onLog(`DSH App Server ready on ${config.host ?? '127.0.0.1'}:${gateway.port}; native DSH ${config.upstreamVersion ?? bootstrap.upstreamVersion ?? 'unknown'} is loopback-only`);
-    output = '';
     return { ...gateway, close, child, upstreamOrigin: native.origin, runtimeDirectory: directory };
   } catch (error) {
-    // Give only redacted diagnostics on failure; success logs contain no native URL/token.
-    onLog(output.replace(/([?&]token=)[^\s"']+/g, '$1[redacted]'));
+    // Never expose native output that might contain credentials.
+    onLog('Native DSH startup failed. Native output is withheld because it may contain credentials.');
     await close();
     throw error;
   }

@@ -22,6 +22,15 @@ try {
   const userData = join(host.run, 'electron-data');
   await mkdir(userData);
   application = await electron.launch(launchOptions(userData));
+  const mainErrors = [];
+  application.process().stderr.on('data', chunk => {
+    const message = chunk.toString();
+    if (message.includes('ACCEPTANCE_MAIN_EXCEPTION:')) mainErrors.push(message);
+  });
+  // Fail instead of leaving CI blocked by Electron's native exception dialog.
+  await application.evaluate(() => {
+    process.on('uncaughtException', error => { console.error('ACCEPTANCE_MAIN_EXCEPTION:', error); process.exit(1); });
+  });
   const frames = [];
   const bridges = [];
   await application.context().routeWebSocket('**/api/remote.mux', client => {
@@ -57,7 +66,8 @@ try {
     if (pathname.startsWith('/api/')) requests.push({ pathname, status: response.status() });
   });
   remote.on('pageerror', error => pageErrors.push(error.message));
-  await remote.waitForURL(`${host.base}/`);
+  await remote.waitForURL(url => url.hostname === '127.0.0.1' && url.pathname === '/');
+  assert.notEqual(new URL(remote.url()).port, new URL(host.base).port, 'GUI must use the authenticated client bridge');
   await remote.locator('#root').waitFor({ timeout: 30_000 });
   console.log('Electron authenticated and loaded the actual Harness GUI.');
   await mkdir(join(root, 'artifacts/screenshots'), { recursive: true });
@@ -77,6 +87,16 @@ try {
   assert.deepEqual(JSON.parse(saved), { version: 2, url: `${host.base}/`, transport: 'direct', remember: false });
   assert.equal(saved.includes(host.token), false);
   console.log('PASS: remote renderer has no Node/preload bridge; opt-out settings contain no secrets.');
+  // A fresh native profile starts without a selected workspace on npm latest.
+  await remote.getByRole('button', { name: 'Choose workspace', exact: true }).click();
+  const initialPicker = remote.getByRole('dialog', { name: 'Select Workspace Directory' });
+  await initialPicker.getByRole('button', { name: 'Edit path', exact: true }).click();
+  const initialPath = initialPicker.getByRole('textbox', { name: 'Edit path' });
+  await initialPath.fill(host.workspace);
+  const initialListing = remote.waitForResponse(response => response.url().endsWith('/api/directoryPicker/list') && response.ok());
+  await initialPath.press('Enter');
+  await initialListing;
+  await initialPicker.getByRole('button', { name: 'Open', exact: true }).click();
   const composer = remote.locator('[data-composer-input][contenteditable="true"][data-phase="plain"]:not([aria-disabled="true"])').last();
   await composer.waitFor();
   await composer.click();
@@ -120,6 +140,7 @@ try {
   console.log('PASS: network loss recovers through a fresh WebSocket generation.');
 
   await composer.fill('Continue while the desktop client exits.');
+  console.log('Second prompt drafted.');
   await remote.getByRole('button', { name: 'Send message', exact: true }).and(remote.locator(':enabled')).waitFor();
   const secondAccepted = remote.waitForResponse(response => response.url().endsWith('/api/session/prompt'));
   const beforeRequests = host.model.requests.length;
@@ -129,7 +150,9 @@ try {
   while (host.model.requests.length === beforeRequests && Date.now() < startedDeadline) await delay(20);
   assert.ok(host.model.requests.length > beforeRequests, 'second model request must start before closing Electron');
   assert.deepEqual(pageErrors, []);
+  console.log('Closing Electron during the active model turn.');
   await application.close();
+  assert.deepEqual(mainErrors, [], 'Electron main process must not throw during active-stream shutdown');
   application = undefined;
   assert.equal((await fetch(`${host.base}/api/app-server/info`, { headers: { cookie: host.cookie } })).status, 200);
   const completionDeadline = Date.now() + 30_000;

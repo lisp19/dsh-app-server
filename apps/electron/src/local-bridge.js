@@ -18,7 +18,11 @@ export async function createLocalBridge({ upstreamURL, getCookies, signal }) {
   const requests = new Set();
   let local;
   let closed = false;
-  const track = socket => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); };
+  const track = socket => {
+    if (sockets.has(socket)) return;
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  };
   const valid = req => {
     const supplied = req.headers[headerName];
     return !closed && typeof supplied === 'string' && /^[a-f0-9]{64}$/.test(supplied)

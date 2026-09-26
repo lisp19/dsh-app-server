@@ -1,6 +1,5 @@
 {
   "node": "/usr/bin/node",
-  "cli": "/opt/dsh-app-server/node_modules/@deepseek-ai/dsh/lib/bin.js",
   "home": "/home/operator/.dsh-app-server",
   "workspace": "/home/operator/workspace",
   "profile": "app-server",

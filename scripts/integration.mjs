@@ -14,7 +14,8 @@ try {
   assert.equal((await fetch(infoUrl)).status, 401);
   const info = await fetch(infoUrl, { headers: { cookie: host.cookie } });
   assert.equal(info.status, 200);
-  assert.deepEqual(await info.json(), { product: 'dsh-app-server', protocolVersion: 1, platform: 'linux' });
+  assert.deepEqual(await info.json(), { product: 'dsh-app-server', protocolVersion: 2, platform: 'linux', upstreamVersion: host.upstreamVersion,
+    capabilities: { passwordLogin: true, http: true, websocket: true } });
   const html = await fetch(`${host.base}/`, { headers: { cookie: host.cookie } });
   assert.equal(html.status, 200);
   assert.match(await html.text(), /__DSH_BOOT__/);
