@@ -1,16 +1,18 @@
-/** Install the packed plugin through the supported profile-management CLI. */
-import { mkdir, stat, readFile } from 'node:fs/promises';
+/** Prepare fresh, unmodified npm latest plus a separately installed test helper. */
+import { mkdir, mkdtemp, readFile, writeFile, rename } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { join, delimiter } from 'node:path';
+import { join } from 'node:path';
+import { installUpstream } from './install-upstream.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const home = join(root, '.integration', 'installation');
+const integration = join(root, '.integration');
 await mkdir(join(root, 'artifacts'), { recursive: true });
-const env = { ...process.env, DSH_HOME: home, PATH: join(root, 'node_modules', '.bin') + delimiter + process.env.PATH };
+await mkdir(join(integration, 'generations'), { recursive: true });
+const generation = await mkdtemp(join(integration, 'generations', 'latest-'));
 
-async function run(command, args, quiet = false) {
-  const child = spawn(command, args, { cwd: root, env, stdio: ['ignore', quiet ? 'ignore' : 'inherit', 'inherit'] });
+async function run(command, args, cwd = root) {
+  const child = spawn(command, args, { cwd, env: process.env, stdio: ['ignore', 'inherit', 'inherit'] });
   await new Promise((resolve, reject) => {
     child.once('error', reject);
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)));
@@ -18,12 +20,21 @@ async function run(command, args, quiet = false) {
 }
 
 await run('npm', ['run', 'pack:server']);
-const cli = join(root, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
-try { await stat(join(home, 'profiles', 'app-server', 'package.json')); }
-catch (error) {
-  if (error.code !== 'ENOENT') throw error;
-  await run(process.execPath, [cli, '--profile', 'app-server', '--from-default-profile', 'web', '--dump-config'], true);
-}
 const { version } = JSON.parse(await readFile(join(root, 'packages/server/package.json'), 'utf8'));
-await run(process.execPath, [cli, 'plugin', '--profile', 'app-server', 'add', join(root, 'artifacts', `dsh-app-server-server-${version}.tgz`)]);
-console.log('Packed plugin installed in .integration/installation.');
+const installed = await installUpstream({
+  directory: join(generation, 'upstream'), home: join(generation, 'home'),
+  pluginTarball: join(root, 'artifacts', `dsh-app-server-server-${version}.tgz`),
+  onLog: message => process.stdout.write(message),
+});
+const testHelperRoot = join(generation, 'mock-runtime');
+await mkdir(testHelperRoot, { mode: 0o700 });
+await writeFile(join(testHelperRoot, 'package.json'), JSON.stringify({
+  name: 'dsh-app-server-integration-helper', private: true, type: 'module',
+  dependencies: { '@deepseek-ai/dsh-llm-mock-server': installed.upstreamVersion },
+}, null, 2) + '\n', { mode: 0o600 });
+await run('npm', ['install', '--no-audit', '--no-fund'], testHelperRoot);
+const metadata = { ...installed, testHelperRoot, preparedAt: new Date().toISOString() };
+const pending = join(generation, 'latest-installation.json');
+await writeFile(pending, JSON.stringify(metadata, null, 2) + '\n', { mode: 0o600 });
+await rename(pending, join(integration, 'latest-installation.json'));
+console.log(`Prepared unmodified npm latest ${installed.upstreamVersion} in ${generation}`);
