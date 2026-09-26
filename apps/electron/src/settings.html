@@ -18,12 +18,25 @@
     <h1 data-text="heading"></h1>
     <p class="intro" data-text="intro"></p>
     <form id="connection-form">
+      <label for="transport" data-text="transport"></label>
+      <select id="transport"><option value="direct" data-text="direct"></option><option value="ssh" data-text="sshTunnel"></option></select>
+      <section id="ssh-fields" hidden>
+        <p class="hint" data-text="sshHint"></p>
+        <div class="field-row"><div><label for="ssh-host" data-text="sshHost"></label><input id="ssh-host" autocomplete="off" spellcheck="false"></div><div class="port-field"><label for="ssh-port" data-text="sshPort"></label><input id="ssh-port" type="number" min="1" max="65535" value="22"></div></div>
+        <label for="ssh-user" data-text="sshUser"></label><input id="ssh-user" autocomplete="off" spellcheck="false">
+        <label for="ssh-auth" data-text="sshAuth"></label><select id="ssh-auth"><option value="password" data-text="sshPasswordAuth"></option><option value="key" data-text="sshKeyAuth"></option></select>
+        <div id="ssh-password-fields"><label for="ssh-password" data-text="sshPassword"></label><input id="ssh-password" type="password" autocomplete="off"></div>
+        <div id="ssh-key-fields" hidden><label for="ssh-key" data-text="sshPrivateKey"></label><div class="field-row"><input id="ssh-key" autocomplete="off" spellcheck="false"><button id="browse-key" type="button" data-text="browse"></button></div><label for="ssh-passphrase" data-text="sshPassphrase"></label><input id="ssh-passphrase" type="password" autocomplete="off"></div>
+      </section>
       <label for="server" data-text="server"></label>
       <input id="server" name="server" type="url" placeholder="https://server.example/" autocomplete="off" spellcheck="false" required aria-describedby="url-hint">
       <p class="hint" id="url-hint" data-text="urlHint"></p>
       <label for="token" data-text="token"></label>
       <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required aria-describedby="token-hint">
       <p class="hint" id="token-hint" data-text="tokenHint"></p>
+      <label class="checkbox-label"><input id="remember" type="checkbox" checked><span data-text="remember"></span></label>
+      <p class="hint" id="storage-hint" data-text="storageHint"></p>
+      <button id="forget" class="secondary" type="button" data-text="forget"></button>
       <div id="status" role="status" aria-live="polite"></div>
       <div class="actions"><button id="connect" type="submit" data-text="connect"></button><button id="cancel" type="button" data-text="cancel" hidden></button></div>
     </form>

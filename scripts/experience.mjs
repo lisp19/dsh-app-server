@@ -72,6 +72,12 @@ try {
       await page.keyboard.press('Tab');
       assert.equal(await page.locator('#token').evaluate(element => element === document.activeElement), true);
       await page.keyboard.press('Tab');
+      if (await page.locator('#remember').isEnabled()) {
+        assert.equal(await page.locator('#remember').evaluate(element => element === document.activeElement), true);
+        await page.keyboard.press('Tab');
+      }
+      assert.equal(await page.locator('#forget').evaluate(element => element === document.activeElement), true);
+      await page.keyboard.press('Tab');
       assert.equal(await page.locator('#connect').evaluate(element => element === document.activeElement), true);
       const focus = await page.locator('#connect').evaluate(element => ({
         style: getComputedStyle(element).outlineStyle,
@@ -80,8 +86,13 @@ try {
       assert.notEqual(focus.style, 'none');
       assert.notEqual(focus.width, '0px');
       await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.locator('#forget').evaluate(element => element === document.activeElement), true);
+      await page.keyboard.press('Shift+Tab');
+      if (await page.locator('#remember').isEnabled()) await page.keyboard.press('Shift+Tab');
       assert.equal(await page.locator('#token').evaluate(element => element === document.activeElement), true);
       await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.locator('#transport').evaluate(element => element === document.activeElement), true);
       await page.keyboard.press('Shift+Tab');
       assert.equal(await page.locator('#language').evaluate(element => element === document.activeElement), true);
       await page.evaluate(() => window.scrollTo(0, 0));

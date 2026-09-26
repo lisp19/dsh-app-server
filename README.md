@@ -20,7 +20,9 @@ dsh --profile app-server --no-open --port 3080
 
 `--from-default-profile web` 仅用于第一次创建 profile。后续启动不要重复该参数。插件安装会自动将 bundle 加入此 profile。模型 API key 可通过 Harness 配置或服务器进程的 `DEEPSEEK_API_KEY` 提供；不要将模型 API key 填入客户端的启动令牌栏。
 
-启动输出包含 `http://127.0.0.1:3080/?token=...`。客户端分别填写服务器根地址和 `token` 的值。启动令牌在服务端进程重启后改变；客户端每次新连接使用新的内存会话，退出后需要再次输入令牌。只保存服务器地址，不保存令牌或认证 cookie。
+启动输出包含 `http://127.0.0.1:3080/?token=...`。客户端分别填写服务器根地址和 `token` 的值。默认启动令牌随服务端重启改变；配置本地 passwordFile 后可使用固定密码。客户端可勾选“记住密码”，使用操作系统加密保存，退出后不保存认证 cookie；不勾选则下次重新输入。Linux 无安全密钥环时禁用密码保存。
+
+v0.4.0 内置 SSH 传输：选择 SSH，填写服务器 SSH 地址、用户名和密码或私钥，服务器 URL 填 `http://127.0.0.1:3080/`（从 SSH 主机访问的地址），另填 app-server 密码。首次连接须核对主机指纹。无需另开 SSH 命令行；详见 [SSH 说明](docs/ssh-transport.md)。
 
 ### SSH 隧道
 
@@ -49,6 +51,8 @@ dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.co
 ### systemd 自动运行与端口查询
 
 公共安装和管理脚本为 [server-control.mjs](scripts/server-control.mjs)，配置格式见 [server.example.json](deploy/server.example.json)。完整部署步骤和 `dsh-server` 操作见 [服务管理](docs/server-management.md)。配置、生成的 unit 和监听 overlay 留在机器本地，不要提交包含本机路径或凭据的文件。
+
+部署配置的 `port` 固定监听端口；可选 `passwordFile` 指向权限为 `600` 的本地固定登录密码文件。启用固定密码后，在现有客户端的启动令牌栏填写该密码，重启无需更换。安装脚本同时应用专用 profile 的版本固定兼容补丁，使非 localhost 客户端也能在模型设置中管理服务端的提供商配置与凭据；仅安装插件 tgz 不包含这些部署适配。
 
 ## Electron 客户端
 

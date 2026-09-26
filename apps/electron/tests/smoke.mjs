@@ -49,6 +49,7 @@ try {
   });
   const settings = await application.firstWindow();
   await settings.locator('#connect').waitFor();
+  if (await settings.locator('#remember').isChecked()) await settings.locator('#remember').uncheck();
   assert.equal(await settings.locator('#token').inputValue(), '');
   const screenshot = fileURLToPath(new URL('../../../artifacts/screenshots/connection.png', import.meta.url));
   await mkdir(path.dirname(screenshot), { recursive: true });
@@ -104,7 +105,7 @@ try {
   assert.equal(remote.url(), `${origin}/`);
   assert.equal(await remote.evaluate(() => window.open('https://example.invalid/') === null), true);
   const saved = await readFile(path.join(directory, 'connection.json'), 'utf8');
-  assert.deepEqual(JSON.parse(saved), { url: `${origin}/` });
+  assert.deepEqual(JSON.parse(saved), { version: 2, url: `${origin}/`, transport: 'direct', remember: false });
   assert.ok(!saved.includes(secret));
 
   expire = true;

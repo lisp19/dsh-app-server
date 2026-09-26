@@ -34,6 +34,7 @@ try {
     });
   });
   settings = await application.firstWindow();
+  if (await settings.locator('#remember').isChecked()) await settings.locator('#remember').uncheck();
   await settings.locator('#server').fill(host.base);
   await settings.locator('#token').fill('wrong-token');
   await settings.locator('#connect').click();
@@ -73,9 +74,9 @@ try {
   assert.equal(preferences[0].contextIsolation, true);
   assert.equal(preferences[0].preload, undefined);
   const saved = await readFile(join(userData, 'connection.json'), 'utf8');
-  assert.deepEqual(JSON.parse(saved), { url: `${host.base}/` });
+  assert.deepEqual(JSON.parse(saved), { version: 2, url: `${host.base}/`, transport: 'direct', remember: false });
   assert.equal(saved.includes(host.token), false);
-  console.log('PASS: remote renderer has no Node/preload bridge; persisted settings contain only URL.');
+  console.log('PASS: remote renderer has no Node/preload bridge; opt-out settings contain no secrets.');
   const composer = remote.locator('[data-composer-input][contenteditable="true"][data-phase="plain"]:not([aria-disabled="true"])').last();
   await composer.waitFor();
   await composer.click();

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Remember desktop passwords using OS encryption; allow forgetting credentials and reject insecure Linux storage fallback.
+- Add built-in SSH password/private-key transport, explicit pinned host-key trust, and HTTP/WebSocket forwarding.
+- Support local fixed server passwords and remote provider settings through narrowly scoped Harness profile patches.
+- Return to connection settings on renderer-process crashes; investigate provider black screens without claiming a reproduced root-cause fix.
+- Build-only release at the operator's request; no automated test suites run.
+
 ## 0.3.0
 
 - Allow remote HTTP roots in the desktop client, with bilingual plaintext-transport warnings.

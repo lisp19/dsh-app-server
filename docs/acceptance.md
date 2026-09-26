@@ -14,7 +14,7 @@ journalctl --user -u dsh-app-server-acceptance.service -n 100 --no-pager
 ss -ltnp 'sport = :3080'
 ```
 
-本机日志中有启动链接。将根地址和其中的 `token` 值分别填入客户端，不要将日志或令牌上传到 GitHub。服务端重启后使用新的启动令牌。
+本机配置通过 `passwordFile` 指向忽略的 `.acceptance/login-password`，客户端的“启动令牌”栏填写该文件中配置的登录密码。端口固定为 `3080`；重启不会改变地址或密码。日志中的启动链接包含认证信息，不要上传到 GitHub。密码的具体值不写入公共文档。
 
 Windows 安装 v0.3.0 Release 的 `dsh-remote-0.3.0-win-x64.exe` 后，可在可信局域网或 VPN 中直接填写 `http://这台Linux主机的局域网IP:3080/`，Token 单独输入。HTTP 不加密令牌、会话或 GUI 中输入的模型密钥；不要向公网暴露端口。旧版 v0.2.0 不支持远程 HTTP。本版按用户要求未运行自动化测试，不能将此前 Linux QA 记录当作本版测试结果。
 

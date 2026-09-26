@@ -5,6 +5,16 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .brand { letter-spacing: .1em; font-weight: 750; font-size: 17px; }
 .brand-detail { font-size: 11px; color: #a0b3c7; font-weight: 500; }
 select { background: #192634; color: #dce8f4; padding: 7px 10px; border: 1px solid #41566b; border-radius: 6px; }
+#connection-form select { width: 100%; font: inherit; }
+.field-row { display: flex; gap: 12px; align-items: end; }
+.field-row > div:first-child { flex: 1; min-width: 0; }
+.port-field { width: 90px; }
+.field-row input { min-width: 0; }
+.field-row button { flex-shrink: 0; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; }
+.checkbox-label input { width: auto; }
+.secondary, #browse-key { background: #26384b; color: #f0f4f8; }
+#forget { margin-top: 12px; padding: 7px 12px; font-size: 12px; }
 main { width: 100%; max-width: 560px; margin: auto; padding: 32px 38px 24px; }
 .connection-mark { width: 42px; height: 42px; border: 1px solid #507386; border-radius: 12px; color: #98dece; display: grid; place-items: center; font-size: 28px; }
 .eyebrow { color: #98dece; letter-spacing: .12em; font-size: 10px; margin: 24px 0 8px; font-weight: 650; }

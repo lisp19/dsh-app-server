@@ -4,7 +4,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('connectionSettings', Object.freeze({
   read: () => ipcRenderer.invoke('settings:read'),
   locale: value => ipcRenderer.invoke('settings:locale', value),
-  connect: (url, token) => ipcRenderer.invoke('settings:connect', { url, token }),
+  connect: (url, token, options = {}) => ipcRenderer.invoke('settings:connect', { ...options, url, token }),
+  forget: () => ipcRenderer.invoke('settings:forget'),
+  privateKey: () => ipcRenderer.invoke('settings:private-key'),
   cancel: () => ipcRenderer.invoke('settings:cancel'),
   onStatus: callback => {
     if (typeof callback !== 'function') return;

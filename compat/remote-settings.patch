@@ -1,0 +1,12 @@
+diff --git a/lib/client.js b/lib/client.js
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -1506,7 +1506,7 @@
+ 		*/
+ 		function apply(ctx) {
+ 			const schema = new SettingsSchemaService(ctx);
+-			const persistence = ctx.remote.$host.isLoopback ? "host" : "memory";
++			const persistence = "host"; // App-server operators configure the authenticated Host.
+ 			const mirror = new SettingsDescribeMirror(ctx, persistence);
+ 			ctx.effect(() => {
+ 				const disposers = [ctx.remote.$on("settings/document-updated", () => {
