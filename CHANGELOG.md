@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
 - Add `--channel latest|next` and persistent `upstreamChannel` configuration for upstream installation; default to `latest`.
 - Record the selected channel in installation metadata and integration reports; support testing either channel without upstream patches.

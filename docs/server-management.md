@@ -55,7 +55,7 @@ dsh-server install --channel latest
 ```bash
 node scripts/install-upstream.mjs --directory /absolute/new-installation \
   --home /absolute/dsh-home --profile app-server \
-  --plugin /absolute/dsh-app-server-server-1.1.0.tgz --channel next
+  --plugin /absolute/dsh-app-server-server-1.2.0.tgz --channel next
 ```
 
 安装目录和 profile 必须尚不存在；插件路径应替换为实际构建的包。`configure-profile.mjs CONFIG [--channel latest|next]` 可为已有配置创建新的安装代际，但不管理 systemd。
