@@ -1,6 +1,6 @@
 {
   "name": "dsh-app-server-project",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "license": "MIT",
   "description": "Independent remote desktop client and server adapter for DeepSeek Harness",
@@ -36,12 +36,6 @@
     "fflate": "$fflate"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-client-connection": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-credentials-local": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-llm-mock-server": "0.1.7-rc.2",
     "@electron/asar": "3.4.1",
     "fflate": "0.8.3",
     "playwright": "^1.58.2",
