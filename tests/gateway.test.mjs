@@ -45,7 +45,7 @@ async function fixture(t) {
 }
 
 test('gateway owns authentication, discovery, and authority-bound sessions', async t => {
-  const { request, cookie } = await fixture(t);
+  const { request, cookie, gateway } = await fixture(t);
   assert.equal((await request()).status, 401);
   assert.equal((await request('/?token=wrong')).status, 401);
   assert.equal((await request('/', { headers: { cookie: 'native=secret' } })).status, 401);
@@ -61,6 +61,9 @@ test('gateway owns authentication, discovery, and authority-bound sessions', asy
   assert.equal((await request('/', { headers: { cookie, host: '127.0.0.1:54321' } })).status, 401);
   assert.equal((await request('/?token=password', { headers: { host: '127.0.0.1:54321' } })).status, 303);
   assert.equal((await request('/?token=password', { headers: { host: 'allowed.example' } })).status, 303);
+  assert.equal((await request('/', { headers: { cookie, origin: gateway.url.replace('http:', 'https:') } })).status, 200);
+  assert.equal((await request('/', { headers: { cookie, origin: gateway.url.replace('http:', 'ftp:') } })).status, 403);
+  assert.equal((await request('/', { path: '/\\[', headers: { cookie } })).status, 403);
 });
 
 test('gateway streams bodies and sanitizes headers and redirects', async t => {

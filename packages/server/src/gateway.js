@@ -43,6 +43,7 @@ export async function createGateway({ upstreamURL, upstreamCookie, getUpstreamCo
   };
 
   function guard(req) {
+    if (!req.url?.startsWith('/') || req.url.startsWith('//') || req.url.includes('\\')) return false;
     const authority = req.headers.host;
     if (!authority || !/^(?:\[[0-9a-fA-F:]+\]|[a-zA-Z0-9.-]+)(?::[0-9]{1,5})?$/.test(authority)) return false;
     let parsed;
@@ -52,7 +53,14 @@ export async function createGateway({ upstreamURL, upstreamCookie, getUpstreamCo
     // URL parsing accepts abbreviated and encoded IPv4; trust only literal addresses.
     if (isIP(hostname) && !isIP(rawHostname)) return false;
     if (!loopback(hostname) && !localAddresses.has(hostname) && !trusted.has(hostname) && !trusted.has(authority.toLowerCase())) return false;
-    if (req.headers.origin && req.headers.origin !== parsed.origin) return false;
+    if (req.headers.origin) {
+      try {
+        const origin = new URL(req.headers.origin);
+        // TLS may terminate at a reverse proxy; only the already trusted authority is accepted.
+        if (!['http:', 'https:'].includes(origin.protocol) || origin.origin !== req.headers.origin
+          || origin.origin !== new URL(`${origin.protocol}//${authority}`).origin) return false;
+      } catch { return false; }
+    }
     if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site'])) return false;
     return parsed.host;
   }
@@ -156,7 +164,8 @@ export async function createGateway({ upstreamURL, upstreamCookie, getUpstreamCo
   const server = http.createServer((req, res) => {
     const authority = guard(req);
     if (!authority || !req.url.startsWith('/') || req.url.startsWith('//')) return reply(res, 403);
-    const url = new URL(req.url, 'http://gateway.invalid');
+    let url;
+    try { url = new URL(req.url, 'http://gateway.invalid'); } catch { return reply(res, 403); }
     if (url.pathname === '/' && url.searchParams.has('token')) {
       if (req.method !== 'GET') return reply(res, 405);
       const now = Date.now();
@@ -177,7 +186,10 @@ export async function createGateway({ upstreamURL, upstreamCookie, getUpstreamCo
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       return res.end(JSON.stringify({ product: 'dsh-app-server', protocolVersion: 2, platform: process.platform, upstreamVersion, capabilities: { passwordLogin: true, http: true, websocket: true } }));
     }
-    proxy(req, res);
+    void proxy(req, res).catch(() => {
+      if (res.headersSent) res.destroy();
+      else reply(res, 502);
+    });
   });
   server.on('connection', trackSocket);
   server.on('connect', (_req, socket) => socket.end('HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n\r\n'));
@@ -185,7 +197,7 @@ export async function createGateway({ upstreamURL, upstreamCookie, getUpstreamCo
     const authority = guard(req);
     const status = !authority || !req.url.startsWith('/') || req.url.startsWith('//') ? 403 : !authenticated(req, authority) ? 401 : req.headers.upgrade?.toLowerCase() !== 'websocket' ? 400 : 0;
     if (status) return socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\n\r\n`);
-    proxy(req, socket, head);
+    void proxy(req, socket, head).catch(() => socket.destroy());
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, host, resolve); });
   const boundPort = server.address().port;
