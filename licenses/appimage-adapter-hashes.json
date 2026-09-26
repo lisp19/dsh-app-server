@@ -1,0 +1,7 @@
+{
+  "appBuilderLibVersion": "26.15.3",
+  "patches": {
+    "out/targets/appimage/appImageUtil.js": "81d0a1b8bebb32b77cdc30d063bc6d89f4bb58d934b9d9267e1a858a0153526e",
+    "out/targets/appimage/AppImageTarget.js": "e4969bf7409aa6437c6553e6a7bfc2eee0c65088c726382e9896cc82f50b0c72"
+  }
+}

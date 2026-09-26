@@ -16,7 +16,7 @@
     "test:smoke": "node tests/smoke.mjs",
     "pack:linux": "node ../../scripts/native-build.mjs linux AppImage deb --x64 --publish never",
     "pack:mac": "node ../../scripts/native-build.mjs mac dmg zip --publish never",
-    "pack:win": "node ../../scripts/native-build.mjs win nsis --x64 --publish never",
+    "pack:win": "node ../../scripts/build-windows-installer.mjs",
     "pack:win:dir": "node ../../scripts/native-build.mjs win dir --x64 --publish never"
   },
   "devDependencies": {
@@ -44,22 +44,12 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "dir",
           "arch": [
             "x64"
           ]
         }
       ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "target": [

@@ -32,9 +32,14 @@ test('release manifest requires every target, correct tag and nonempty artifacts
       .map(suffix => `dsh-remote-${root.version}-${suffix}`),
   ];
   for (const name of names) await writeFile(join(directory, name), 'fixture');
+  assert.notEqual(run(`v${root.version}`).status, 0, 'Corresponding AppImage sources are mandatory');
+  const sources = JSON.parse(await readFile(new URL('../licenses/appimage-runtime-sources.json', import.meta.url)));
+  const sourceNames = sources.components.flatMap(component => component.assets.map(asset => asset.name));
+  for (const name of sourceNames) await writeFile(join(directory, name), 'source fixture');
+  names.push(...sourceNames);
   const result = run(`v${root.version}`);
   assert.equal(result.status, 0, result.stderr);
-  names.push('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt', 'npm-inventory.json');
+  names.push('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt', 'npm-inventory.json', 'appimage-runtime-sources.json');
   const sums = await readFile(join(directory, 'SHA256SUMS'), 'utf8');
   assert.equal(sums.trim().split('\n').length, names.length);
   assert.ok(names.every(name => sums.includes(`  ${name}\n`)));

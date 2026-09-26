@@ -94,6 +94,20 @@ jobs:
         env:
           DSH_ELECTRON_EXECUTABLE: ${{ matrix.executable }}
         run: node apps/electron/tests/smoke.mjs
+      - name: Install, upgrade and uninstall the actual Windows installer
+        if: runner.os == 'Windows'
+        run: node scripts/smoke-windows-installer.mjs
+      - name: Inspect and smoke the AppImage launcher
+        if: runner.os == 'Linux'
+        env:
+          DSH_ELECTRON_EXECUTABLE: artifacts/appimage-extracted/AppRun
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+          node scripts/check-appimage.mjs apps/electron/dist/*.AppImage artifacts/appimage-extracted
+          sudo chown root:root artifacts/appimage-extracted/chrome-sandbox
+          sudo chmod 4755 artifacts/appimage-extracted/chrome-sandbox
+          xvfb-run -a node apps/electron/tests/smoke.mjs
       - run: npm run prepare:integration
         if: runner.os == 'Linux'
       - run: npm run test:integration

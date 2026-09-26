@@ -1,5 +1,5 @@
 /** Check the unpacked directory used to produce native installers. */
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, readdir } from 'node:fs/promises';
 import { resolve, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listPackage, extractFile } from '@electron/asar';
@@ -9,6 +9,15 @@ const directory = process.argv[2];
 if (!directory || process.argv.length !== 3) throw new Error('Usage: node scripts/check-package.mjs UNPACKED_APPLICATION_DIRECTORY');
 const application = resolve(directory);
 const resources = join(application, application.endsWith('.app') ? 'Contents/Resources' : 'resources');
+async function rejectLegacyInstallerHelpers(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (/^(?:elevate\.exe|WinShell\.dll|StdUtils\.dll|nsProcess\.dll)$/i.test(entry.name)) {
+      throw new Error(`Unreviewed legacy installer helper in application: ${entry.name}`);
+    }
+    if (entry.isDirectory()) await rejectLegacyInstallerHelpers(join(directory, entry.name));
+  }
+}
+await rejectLegacyInstallerHelpers(resources);
 for (const [name, source] of [
   ['DSH-App-Server-LICENSE.txt', 'LICENSE'],
   ['THIRD_PARTY_NOTICES.txt', 'apps/electron/THIRD_PARTY_NOTICES.txt'],

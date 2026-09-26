@@ -57,6 +57,8 @@ jobs:
           path: release-assets
           merge-multiple: true
           digest-mismatch: error
+      - name: Fetch and verify corresponding AppImage runtime sources
+        run: node scripts/appimage-sources.mjs release-assets
       - name: Validate complete release set and hashes
         env:
           RELEASE_TAG: ${{ github.ref_name }}

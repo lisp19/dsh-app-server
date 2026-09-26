@@ -1,0 +1,122 @@
+{
+  "runtime": {
+    "toolset": "electron-builder-binaries/appimage-12.0.1",
+    "architecture": "x64",
+    "bytes": 188392,
+    "sha256": "24da8e0e149b7211cbfb00a545189a1101cb18d1f27d4cfc1895837d2c30bc30",
+    "versionString": "effcebc",
+    "dynamicDependencies": [
+      "libdl.so.2",
+      "libpthread.so.0",
+      "libz.so.1",
+      "libc.so.6"
+    ],
+    "dlopenDependencies": [
+      "libfuse.so.2",
+      "libnotify.so.*"
+    ]
+  },
+  "policy": "The six legacy desktop libraries are not distributed. Runtime source snapshots accompany the binary because libappimage light_elf.h carries GPL-2.0-only wording. This records that exception conservatively; the original application code remains MIT.",
+  "components": [
+    {
+      "name": "AppImageKit",
+      "version": "effcebc1d81c5e174a48b870cb420f490fb5fb4d",
+      "license": "MIT",
+      "homepage": "https://github.com/AppImage/AppImageKit",
+      "assets": [
+        {
+          "name": "appimagekit-effcebc1d81c5e174a48b870cb420f490fb5fb4d.tar.gz",
+          "url": "https://codeload.github.com/AppImage/AppImageKit/tar.gz/effcebc1d81c5e174a48b870cb420f490fb5fb4d",
+          "sha256": "b30fbbfc042ecee6b5658237b8820f4ac598ee9885bdcc865c3582833f6bd252"
+        }
+      ]
+    },
+    {
+      "name": "libappimage",
+      "version": "13f401a4a384ec59ec9a144e2a7006adf751571f",
+      "license": "MIT AND GPL-2.0-only AND LicenseRef-Public-Domain",
+      "homepage": "https://github.com/AppImage/libappimage",
+      "assets": [
+        {
+          "name": "libappimage-13f401a4a384ec59ec9a144e2a7006adf751571f.tar.gz",
+          "url": "https://codeload.github.com/AppImage/libappimage/tar.gz/13f401a4a384ec59ec9a144e2a7006adf751571f",
+          "sha256": "e0303dc5dcb09019ceb3b4d2b40d770f90037574ce5fa3407d6da7a0e6da18ce"
+        }
+      ]
+    },
+    {
+      "name": "squashfuse",
+      "version": "1f980303b89c779eabfd0a0fdd36d6a7a311bf92",
+      "license": "BSD-2-Clause",
+      "homepage": "https://github.com/vasi/squashfuse",
+      "assets": [
+        {
+          "name": "squashfuse-1f980303b89c779eabfd0a0fdd36d6a7a311bf92.tar.gz",
+          "url": "https://codeload.github.com/vasi/squashfuse/tar.gz/1f980303b89c779eabfd0a0fdd36d6a7a311bf92",
+          "sha256": "8cef1539bd9c9efd3c407004fdd7a3bbef44102a5966b892819a275d609013a3"
+        }
+      ]
+    },
+    {
+      "name": "XZ liblzma",
+      "version": "5.2.3",
+      "license": "LicenseRef-Public-Domain",
+      "homepage": "https://tukaani.org/xz/",
+      "assets": [
+        {
+          "name": "xz-5.2.3.tar.gz",
+          "url": "https://tukaani.org/xz/xz-5.2.3.tar.gz",
+          "sha256": "71928b357d0a09a12a4b4c5fafca8c31c19b0e7d3b8ebb19622e96f26dbf28cb"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "name": "AppImageKit LICENSE",
+      "url": "https://raw.githubusercontent.com/AppImage/AppImageKit/effcebc1d81c5e174a48b870cb420f490fb5fb4d/LICENSE",
+      "sha256": "b54da09f0d48f1c42a1b27035711ed41494551ed8a20b991746e669e6f944a94"
+    },
+    {
+      "name": "AppImageKit runtime.c",
+      "url": "https://raw.githubusercontent.com/AppImage/AppImageKit/effcebc1d81c5e174a48b870cb420f490fb5fb4d/src/runtime.c",
+      "sha256": "7bd6f2b95ff85d9cd96a6494be521cb039fea020490a3bd7ee63fa399d1820c4"
+    },
+    {
+      "name": "libappimage LICENSE",
+      "url": "https://raw.githubusercontent.com/AppImage/libappimage/13f401a4a384ec59ec9a144e2a7006adf751571f/LICENSE",
+      "sha256": "e7e6b508c5d459c6a5b8997f5594f48a031a2fcc24197140a04fdd14b9a0fbcf"
+    },
+    {
+      "name": "libappimage light_elf.h",
+      "url": "https://raw.githubusercontent.com/AppImage/libappimage/13f401a4a384ec59ec9a144e2a7006adf751571f/src/libappimage_shared/light_elf.h",
+      "sha256": "3057a67183e5a51bd98cb78529c79ec04067138a1c77d2db6a25451ad863af5f"
+    },
+    {
+      "name": "libappimage md5.c",
+      "url": "https://raw.githubusercontent.com/AppImage/libappimage/13f401a4a384ec59ec9a144e2a7006adf751571f/src/libappimage_hashlib/md5.c",
+      "sha256": "c3525644fe8a2430163888f094acf412e59e1cdbe540182db2eff85f592c617d"
+    },
+    {
+      "name": "squashfuse LICENSE",
+      "url": "https://raw.githubusercontent.com/vasi/squashfuse/1f980303b89c779eabfd0a0fdd36d6a7a311bf92/LICENSE",
+      "sha256": "9e909cc8a8ba27b1a649c964cf9eda37de911f3138c2b64e6d2f01703904ac13"
+    },
+    {
+      "name": "XZ Utils COPYING",
+      "url": "https://raw.githubusercontent.com/tukaani-project/xz/v5.2.3/COPYING",
+      "sha256": "c4f8e14fafe458d84808a4cd8b69f94673ebe2bf8fc992291629a69ac12218f8"
+    },
+    {
+      "name": "GNU GPL version 2",
+      "url": "https://raw.githubusercontent.com/tukaani-project/xz/v5.2.3/COPYING.GPLv2",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    }
+  ],
+  "buildEvidence": [
+    "https://github.com/AppImage/AppImageKit/blob/effcebc1d81c5e174a48b870cb420f490fb5fb4d/src/build-runtime.cmake",
+    "https://github.com/AppImage/AppImageKit/tree/effcebc1d81c5e174a48b870cb420f490fb5fb4d/lib",
+    "https://github.com/AppImage/libappimage/blob/13f401a4a384ec59ec9a144e2a7006adf751571f/cmake/dependencies.cmake",
+    "https://github.com/AppImage/libappimage/blob/13f401a4a384ec59ec9a144e2a7006adf751571f/src/patches/patch-squashfuse.sh.in"
+  ]
+}

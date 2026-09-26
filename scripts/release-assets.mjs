@@ -16,11 +16,14 @@ const names = [
   ...['win-x64.exe', 'linux-x64.AppImage', 'linux-x64.deb', 'mac-x64.dmg', 'mac-x64.zip', 'mac-arm64.dmg', 'mac-arm64.zip']
     .map(suffix => `dsh-remote-${version}-${suffix}`),
 ].sort();
+const sources = JSON.parse(await readFile(new URL('../licenses/appimage-runtime-sources.json', import.meta.url), 'utf8'));
+names.push(...sources.components.flatMap(component => component.assets.map(asset => asset.name)));
 const assets = [];
 for (const [source, name] of [
   ['../LICENSE', 'LICENSE.txt'],
   ['../apps/electron/THIRD_PARTY_NOTICES.txt', 'THIRD_PARTY_NOTICES.txt'],
   ['../licenses/npm-inventory.json', 'npm-inventory.json'],
+  ['../licenses/appimage-runtime-sources.json', 'appimage-runtime-sources.json'],
 ]) {
   await writeFile(join(directory, name), await readFile(new URL(source, import.meta.url)));
   names.push(name);

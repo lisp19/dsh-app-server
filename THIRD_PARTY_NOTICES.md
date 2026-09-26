@@ -39,6 +39,31 @@ cpu-features/buildcheck/nan chain. cpu-features bundles Google CPU Features unde
 Apache-2.0 and Android BSD terms, in addition to the wrapper's MIT license.
 bcrypt-pbkdf retains the Niels Provos, Ted Unangst, and Joyent notices.
 
+Generated package scripts and desktop/AppArmor templates also incorporate
+electron-builder/app-builder-lib material under MIT. Its preserved copyright and
+license appear in the desktop notice file, with reviewed inputs in
+[licenses/build-distributed-sources.json](licenses/build-distributed-sources.json).
+These templates are separate from the eight npm runtime packages.
+
+The Windows installer uses Inno Setup 6.7.3; its compiler download hash
+and preserved license texts are recorded in [licenses/inno-setup.json](licenses/inno-setup.json).
+Inno Setup permits use and redistribution under its published conditions; its
+original installer copyright and website notices are retained. The notice file
+also credits RemObjects Pascal Script and Igor Pavlov's public-domain LZMA decoder.
+The Windows application directory is built without NSIS helpers.
+
+The Linux AppImage includes an AppImageKit launcher, libappimage, squashfuse,
+and XZ liblzma. Full runtime notices, including the GPL-2.0 notice in libappimage's
+`light_elf.h`, are preserved in
+[licenses/appimage-runtime-notices.txt](licenses/appimage-runtime-notices.txt)
+and appended to the desktop notice file. This GPL-covered component is an
+exception to the launcher's predominantly MIT licensing; it does not change
+the license of the separate application payload. The release publishes the four
+matching source archives alongside the AppImage, with pinned versions and hashes
+in [licenses/appimage-runtime-sources.json](licenses/appimage-runtime-sources.json).
+The six legacy desktop libraries in the packaging toolset are excluded from the
+AppImage. Host-provided libraries are not part of that launcher distribution.
+
 Electron is listed as a build dependency but its runtime is redistributed.
 The native build copies Electron's `LICENSE` as `Electron-LICENSE.txt` and
 `LICENSES.chromium.html` into the application's `resources/licenses/` directory

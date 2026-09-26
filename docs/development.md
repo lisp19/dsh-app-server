@@ -32,10 +32,14 @@ npm run build:mac
 
 按目标平台选择构建命令，并在对应系统与 CPU 架构上原生构建，保证 Electron 运行时与随包版权文件匹配；脚本会拒绝跨平台/架构构建。插件包输出到 `artifacts/`，桌面包输出到 `apps/electron/dist/`。Windows 构建不需要 Wine；macOS 应在对应架构的 Mac 上构建。签名和公证需要单独配置发行凭据。
 
+Windows `.exe` 使用 Inno Setup；Linux 保留 AppImage 和 deb，macOS 保留 dmg 和 zip。安装器身份、构建工具固定及产物审查要求见 [打包说明](packaging.md)。
+
 用 `DSH_ELECTRON_EXECUTABLE` 指定打包后可执行文件，可对包运行 Electron 集成检查。`scripts/experience.mjs` 检查连接页交互与截图；Linux 无显示服务器时同样使用 Xvfb。
 
 ## 发布要求
 
-发布前必须通过单元测试、Electron smoke、真实 Harness 集成和目标平台构建；Linux 还应验证打包后的客户端。流水线产物须核对版本、必需文件、manifest 和 SHA-256 摘要。自动化启动不能代替 Windows/macOS 的交互式安装、卸载和真实远程环境检查。执行状态以对应提交的流水线记录为准。
+发布前必须通过单元测试、Electron smoke、真实 Harness 集成和目标平台构建；Linux 还应验证打包后的客户端。Windows 须对实际 Inno Setup 安装程序执行静默安装、升级/重装、已安装客户端启动和卸载检查，并确认用户数据保留。仅启动解包目录中的程序不满足安装器检查要求。
+
+流水线产物须核对版本、必需文件、manifest、SHA-256 摘要及最终包内许可文件。自动化检查不能代替交互式安装体验和真实远程环境检查。执行状态以对应提交的流水线记录为准。
 
 维护流程见 [CONTRIBUTING](../CONTRIBUTING.md)。

@@ -6,8 +6,18 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 const lock = JSON.parse(read('package-lock.json'));
 const sources = JSON.parse(read('licenses/desktop-runtime-sources.json'));
+const buildSources = JSON.parse(read('licenses/build-distributed-sources.json'));
+const inno = JSON.parse(read('licenses/inno-setup.json'));
+const appimageNotices = read('licenses/appimage-runtime-notices.txt').replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trimEnd();
 const check = process.argv.includes('--check');
 const entries = lock.packages;
+for (const component of buildSources.components) {
+  for (const [key, integrity] of Object.entries(component.lockPackages)) {
+    if (entries[key]?.version !== component.version || entries[key]?.integrity !== integrity) {
+      throw new Error(`Review redistributed build template notices for ${key}`);
+    }
+  }
+}
 const roles = new Map();
 const nameOf = (key, entry) => entry.name ?? key.split('node_modules/').at(-1);
 
@@ -98,6 +108,20 @@ const desktopNotice = [
     entry.repository,
     ...entry.files.flatMap((file) => ['', `--- ${file.path} ---`, file.text.replaceAll('\r\n', '\n').trimEnd()]),
   ]),
+  '', 'Build-distributed templates (separate from the npm runtime dependencies):',
+  ...buildSources.components.flatMap((entry) => [
+    '', '='.repeat(72), `${entry.name}@${entry.version} — ${entry.license}`,
+    entry.repository,
+    ...entry.files.flatMap((file) => ['', `--- ${file.path} ---`, file.text.trimEnd()]),
+  ]),
+  '', '='.repeat(72), `Windows installer: Inno Setup ${inno.version}`,
+  inno.homepage, inno.source,
+  'The Windows installer is made using Inno Setup and RemObjects Pascal Script.',
+  'RemObjects Pascal Script: https://www.remobjects.com/ps.aspx',
+  'LZMA2 decompression: Igor Pavlov, public domain.',
+  'The original installer copyright and website notices are retained.',
+  ...inno.files.flatMap((file) => ['', `--- ${file.path} ---`, file.text.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trimEnd()]),
+  '', '='.repeat(72), appimageNotices,
   '',
 ].join('\n');
 
@@ -141,6 +165,31 @@ These include ssh2, asn1, safer-buffer, bcrypt-pbkdf, tweetnacl, and the optiona
 cpu-features/buildcheck/nan chain. cpu-features bundles Google CPU Features under
 Apache-2.0 and Android BSD terms, in addition to the wrapper's MIT license.
 bcrypt-pbkdf retains the Niels Provos, Ted Unangst, and Joyent notices.
+
+Generated package scripts and desktop/AppArmor templates also incorporate
+electron-builder/app-builder-lib material under MIT. Its preserved copyright and
+license appear in the desktop notice file, with reviewed inputs in
+[licenses/build-distributed-sources.json](licenses/build-distributed-sources.json).
+These templates are separate from the eight npm runtime packages.
+
+The Windows installer uses Inno Setup ${inno.version}; its compiler download hash
+and preserved license texts are recorded in [licenses/inno-setup.json](licenses/inno-setup.json).
+Inno Setup permits use and redistribution under its published conditions; its
+original installer copyright and website notices are retained. The notice file
+also credits RemObjects Pascal Script and Igor Pavlov's public-domain LZMA decoder.
+The Windows application directory is built without NSIS helpers.
+
+The Linux AppImage includes an AppImageKit launcher, libappimage, squashfuse,
+and XZ liblzma. Full runtime notices, including the GPL-2.0 notice in libappimage's
+\`light_elf.h\`, are preserved in
+[licenses/appimage-runtime-notices.txt](licenses/appimage-runtime-notices.txt)
+and appended to the desktop notice file. This GPL-covered component is an
+exception to the launcher's predominantly MIT licensing; it does not change
+the license of the separate application payload. The release publishes the four
+matching source archives alongside the AppImage, with pinned versions and hashes
+in [licenses/appimage-runtime-sources.json](licenses/appimage-runtime-sources.json).
+The six legacy desktop libraries in the packaging toolset are excluded from the
+AppImage. Host-provided libraries are not part of that launcher distribution.
 
 Electron is listed as a build dependency but its runtime is redistributed.
 The native build copies Electron's \`LICENSE\` as \`Electron-LICENSE.txt\` and

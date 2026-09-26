@@ -1,0 +1,25 @@
+{
+  "version": "6.7.3",
+  "homepage": "https://jrsoftware.org/",
+  "source": "https://github.com/jrsoftware/issrc/tree/is-6_7_3",
+  "compiler": {
+    "url": "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe",
+    "sha256": "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
+    "verification": "SHA-256 published by the official GitHub release API for is-6_7_3; downloaded bytes are checked before execution."
+  },
+  "licenseNote": "Pinned Inno Setup license permits use, including commercial use, and redistribution subject to retained notices. Upstream purchase requests are not conditions in this license. Built-in installer copyright and website notices are not customized or removed.",
+  "files": [
+    {
+      "path": "license.txt",
+      "text": "Inno Setup License\r\n==================\r\n\r\nExcept where otherwise noted, all of the documentation and software included in the Inno\r\nSetup package is copyrighted by Jordan Russell.\r\n\r\nCopyright (C) 1997-2026 Jordan Russell. All rights reserved.\r\nPortions Copyright (C) 2000-2026 Martijn Laan. All rights reserved.\r\n\r\nThis software is provided \"as-is,\" without any express or implied warranty. In no event shall\r\nthe author be held liable for any damages arising from the use of this software.\r\n\r\nPermission is granted to anyone to use this software for any purpose, including commercial\r\napplications, and to alter and redistribute it, provided that the following conditions are met:\r\n\r\n1. All redistributions of source code files must retain all copyright notices that are currently\r\n   in place, and this list of conditions without modification.\r\n\r\n2. All redistributions in binary form must retain all occurrences of the above copyright notice\r\n   and web site addresses that are currently in place (for example, in the About boxes).\r\n\r\n3. The origin of this software must not be misrepresented; you must not claim that you wrote\r\n   the original software. If you use this software to distribute a product, an acknowledgment\r\n   in the product documentation would be appreciated but is not required.\r\n\r\n4. Modified versions in source or binary form must be plainly marked as such, and must not\r\n   be misrepresented as being the original software.\r\n\r\n\r\nJordan Russell\r\njr-2020 AT jrsoftware.org\r\nhttps://jrsoftware.org/"
+    },
+    {
+      "path": "Components/UniPs/LICENSE.md",
+      "text": "# RemObjects Pascal Script\r\nCreated By Carlo Kok \t   \t\t\t\r\nck@remobjects.com\r\n\r\nCopyright (C) 2000-2014 by Carlo Kok and RemObjects Software, LLC\r\n\r\nThis software is provided 'as-is', without any expressed or implied warranty. In no event will the author be held liable for any damages arising from the use of this software.\r\nPermission is granted to anyone to use this software for any kind of application, and to alter it and redistribute it freely, subject to the following restrictions:\r\n\r\n1. The origin of this software must not be misrepresented, you must not claim that you wrote the original software.\r\n2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.\r\n3. You must have a visible line in your programs aboutbox or documentation that it is made using RemObjects Pascal Script and where RemObjects Pascal Script can be found.\r\n4. This notice may not be removed or altered from any source distribution.\r\n\r\nIf you have any questions concerning this license contact info@remobjects.com\r\n\r\nCarlo Kok, RemObjects Software\r\n\r\n"
+    },
+    {
+      "path": "Components/Lzma2/Lzma2Dec.c copyright header",
+      "text": "/* Lzma2Dec.c -- LZMA2 Decoder\r\n2024-03-01 : Igor Pavlov : Public domain */"
+    }
+  ]
+}

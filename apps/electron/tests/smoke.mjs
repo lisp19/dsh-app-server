@@ -48,6 +48,7 @@ try {
     timeout: 20000,
   });
   const settings = await application.firstWindow();
+  assert.equal(await application.evaluate(({ app }) => app.commandLine.hasSwitch('no-sandbox') || app.commandLine.hasSwitch('disable-setuid-sandbox')), false, 'Launcher must not disable Chromium sandboxing');
   await settings.locator('#connect').waitFor();
   if (await settings.locator('#remember').isChecked()) await settings.locator('#remember').uncheck();
   assert.equal(await settings.locator('#token').inputValue(), '');

@@ -10,11 +10,13 @@
 
 | 系统 | 架构 | 格式 |
 | --- | --- | --- |
-| Windows | x64 | `.exe` |
+| Windows | x64 | `.exe`（Inno Setup 安装程序） |
 | Linux | x64 | `.AppImage`、`.deb` |
 | macOS | x64、arm64 | `.dmg`、`.zip` |
 
 安装包未配置发行者签名，macOS 使用 ad-hoc 签名且未经公证。请遵循系统提示和组织的软件安装政策。
+
+从 Windows v0.x 升级时，先退出客户端并卸载旧版 NSIS 安装，再安装 v1.0.0。卸载时保留用户数据；新旧安装器使用不同的安装标识。v1.0 起使用稳定的 Inno Setup 标识进行后续升级。打包方式和验证要求见 [打包说明](docs/packaging.md)。
 
 ## 安装 Linux 服务端
 
