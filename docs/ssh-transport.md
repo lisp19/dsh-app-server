@@ -1,34 +1,27 @@
-# Built-in SSH transport
+# SSH 连接
 
-The desktop client can connect to the existing DSH App Server HTTP and WebSocket service through SSH. Select SSH transport, enter the SSH host, port (usually 22), username, and either a password or an absolute private-key file path. Encrypted private keys also need their passphrase.
+客户端可通过内置 SSH 将 HTTP 和 WebSocket 流量转发到服务器，无需另开 SSH 命令行。
 
-The server URL is the address reachable **from the SSH host**. For this deployment use `http://127.0.0.1:3080/` (replace the port if configured differently). SSH forwarding must be permitted by the SSH server. The app-server password/access token is still required: SSH authentication and app-server authentication are separate.
+1. 选择 SSH 传输，填写主机、端口（通常为 22）和用户名。
+2. 选择密码或私钥认证。私钥填写客户端本机的绝对路径；加密私钥还需口令。
+3. 服务器 URL 填从 SSH 主机访问的 HTTP 根地址，例如 `http://127.0.0.1:3080/`。
+4. 单独填写 app-server 启动令牌或固定密码。
+5. 首次连接时，通过可信渠道核对显示的 SHA256 主机指纹，再确认连接。
 
-“Remember password” saves the app-server password, SSH password or key passphrase using OS encryption after a successful connection. The private-key path is saved, not the key contents. Windows uses DPAPI; Linux requires a supported system keyring and never falls back to plaintext. “Forget saved passwords” removes saved secrets but preserves the endpoint and trusted host fingerprints.
+服务器 SSH 必须允许 TCP 转发。SSH 认证与 app-server 登录互相独立。SSH 加密到 SSH 主机为止；若转发目标是另一台机器，其间 HTTP 流量仍为明文，因此优先使用 SSH 主机上的 loopback 目标。
 
-Trust pins live in `ssh-hosts.json` in Electron's application userData directory (under `%APPDATA%` on Windows). If a host key changes legitimately, close the client, independently verify the new fingerprint, and remove only that host/port entry before reconnecting. Do not delete pins to bypass an unexplained mismatch.
+## 保存密码和主机信任
 
-Verify the displayed SSH SHA256 host-key fingerprint against a trusted source before approving a new host. Host-key verification is mandatory; an unexpected key must not be silently accepted. The desktop main process owns trust decisions and persisted fingerprints. The transport helper does not consult OpenSSH `known_hosts` or SSH config files.
+“记住密码”在成功连接后使用操作系统加密保存 app-server 密码、SSH 密码或私钥口令。Windows 使用 DPAPI；Linux 需要安全密钥环，不回退到明文。只保存私钥路径，不复制私钥内容；认证 cookie 不持久化。
 
-HTTP requests and WebSocket connections share an ephemeral listener bound to `127.0.0.1` on the desktop. Each local connection opens an SSH `direct-tcpip` channel to the configured target. No shell command or remote process is started. SSH encrypts traffic between the desktop and the SSH host; traffic from that host to a separate HTTP target is ordinary HTTP. Prefer a target on the SSH host's loopback interface.
+“忘记已保存密码”删除密码，保留地址和已信任指纹。指纹保存在 Electron 用户数据目录的 `ssh-hosts.json`。主机密钥变化会被拒绝；若确为服务器管理员更换，先独立核验新指纹、关闭客户端，再移除对应主机/端口记录并重新连接。不要为绕过未知错误而删除信任记录。
 
-## Transport API
+## 限制
 
-`validateSSH(input)` returns `{ host, port, username, auth, privateKeyPath? }`, where `auth` is `password` or `key`. It strips credentials and unrelated fields. Malformed settings throw `ConnectionError('sshConfig')`.
+- SSH 目标仅支持 HTTP 根地址；HTTPS 使用直连方式。
+- 支持密码和私钥，不支持 SSH agent、交互式 MFA、SSH 证书、跳板机或 OpenSSH 配置别名。
+- 主机可填 DNS、IPv4 或不带方括号的 IPv6 地址。私钥须可由客户端读取。
+- 隧道断开后需重新连接；客户端不启动远程服务或远程 shell。
+- 转发器使用临时 loopback 监听端口，本机其他进程可访问该端口，app-server 认证仍然必要。
 
-`await openSSHTunnel({ ssh, password, passphrase, targetURL, signal, verifyHost, onDisconnect })` returns `{ url, close }`. `url` is a root HTTP URL on the ephemeral loopback listener. `targetURL` accepts a string or URL object. `verifyHost({ host, port, fingerprint })` may be asynchronous and must return exactly `true` to accept the host key. Fingerprints use the canonical OpenSSH `SHA256:` format without base64 padding.
-
-`close()` is synchronous and idempotent: it cancels pending listening, destroys local sockets and forwarding channels, and destroys the SSH connection. Aborting the supplied signal does the same, including during setup. Intentional closure or abort does not call `onDisconnect`. An existing `ConnectionError` abort reason is preserved; other abort reasons become `cancelled`.
-
-Unexpected SSH disconnection, listener failure, or forwarding rejection closes the entire tunnel and calls `onDisconnect(ConnectionError('sshNetwork'))` once after opening. A remote connection refusal or disabled SSH forwarding is reported this way. Setup errors reject with sanitized `sshConfig`, `sshAuth`, `sshHostKey`, or `sshNetwork` codes; raw errors and secrets are not exposed. The caller should cancel its active HTTP authentication attempt when it receives a disconnect notification.
-
-## Limits
-
-- SSH targets accept root `http://` URLs only. Use the existing direct transport for HTTPS. The tunnel does not rewrite TLS server names, HTTP Host headers, redirects, or absolute links.
-- Password and private-key authentication are supported; SSH agents, keyboard-interactive/MFA prompts, certificates, jump hosts, and OpenSSH configuration aliases are not.
-- SSH host addresses accept DNS names and unbracketed IPv4/IPv6 literals. Private-key paths must be absolute and readable by the desktop process.
-- The helper never persists passwords, passphrases, or private-key contents. Credential storage and host-key pinning belong to the desktop main process.
-- A tunnel loss requires reconnecting. There is no automatic reconnect or remote process startup.
-- The loopback listener is reachable by other processes on the desktop while connected; app-server authentication remains necessary.
-
-The forwarding and host-verification implementation follows the [ssh2 client API](https://github.com/mscdex/ssh2#client-methods).
+部署及登录令牌获取方法见 [服务管理](server-management.md)。

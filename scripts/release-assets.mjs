@@ -17,6 +17,15 @@ const names = [
     .map(suffix => `dsh-remote-${version}-${suffix}`),
 ].sort();
 const assets = [];
+for (const [source, name] of [
+  ['../LICENSE', 'LICENSE.txt'],
+  ['../apps/electron/THIRD_PARTY_NOTICES.txt', 'THIRD_PARTY_NOTICES.txt'],
+  ['../licenses/npm-inventory.json', 'npm-inventory.json'],
+]) {
+  await writeFile(join(directory, name), await readFile(new URL(source, import.meta.url)));
+  names.push(name);
+}
+names.sort();
 for (const name of names) {
   const bytes = await readFile(join(directory, name));
   if (!bytes.length) throw new Error(`Empty release artifact: ${name}`);

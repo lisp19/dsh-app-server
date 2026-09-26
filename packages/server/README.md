@@ -1,7 +1,7 @@
 # App Server plugin
 
-Install this bundle into a Web-derived DeepSeek Harness profile. It provides authenticated client discovery at `GET /api/app-server/info`, selects the in-page Linux directory picker, and hides host-local “Open in application” controls. It uses the existing Host authentication, RPC, streams, and GUI.
+Cordis bundle for a Web-derived [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) profile. It provides authenticated client discovery at `GET /api/app-server/info`, selects the server directory browser and hides host-local “Open in application” controls. Authentication, RPC, streams, model execution and sessions remain owned by Harness.
 
-Requires Harness `0.1.7-rc.2`. The supported client discovery protocol is version `1`. Installing this bundle does not expose a network listener or disable authentication; use an SSH tunnel or HTTPS reverse proxy in front of the loopback Web listener. The project README contains deployment instructions.
+Requires Harness `0.1.7-rc.2`; discovery protocol version is `1`. The bundle does not create a network listener or disable authentication. Remote-settings and fixed-password compatibility patches are separate deployment steps.
 
-The `apply` registration belongs to the Cordis plugin lifecycle and is disposed when unloaded. Discovery sends no model-visible input and changes no Session formats.
+See the [project README](https://github.com/lisp19/dsh-app-server#readme) for installation and the [service guide](https://github.com/lisp19/dsh-app-server/blob/main/docs/server-management.md) for deployment. Plugin registrations are disposed through the Cordis lifecycle when the bundle unloads.

@@ -1,22 +1,23 @@
 {
   "name": "@dsh-app-server/electron",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Isolated desktop client for DSH App Server",
   "author": "DSH App Server contributors",
   "license": "MIT",
   "homepage": "https://github.com/lisp19/dsh-app-server",
+  "repository": { "type": "git", "url": "git+https://github.com/lisp19/dsh-app-server.git", "directory": "apps/electron" },
   "desktopName": "dsh-remote.desktop",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
-    "pack:linux": "electron-builder --linux AppImage deb --x64 --publish never",
-    "pack:mac": "electron-builder --mac dmg zip --publish never",
-    "pack:win": "electron-builder --win nsis --x64 --publish never",
-    "pack:win:dir": "electron-builder --win dir --x64 --publish never"
+    "pack:linux": "node ../../scripts/native-build.mjs linux AppImage deb --x64 --publish never",
+    "pack:mac": "node ../../scripts/native-build.mjs mac dmg zip --publish never",
+    "pack:win": "node ../../scripts/native-build.mjs win nsis --x64 --publish never",
+    "pack:win:dir": "node ../../scripts/native-build.mjs win dir --x64 --publish never"
   },
   "devDependencies": {
     "electron": "44.0.0",
@@ -33,6 +34,12 @@
       "src/**/*",
       "package.json",
       "LICENSE"
+    ],
+    "extraResources": [
+      { "from": "LICENSE", "to": "licenses/DSH-App-Server-LICENSE.txt" },
+      { "from": "THIRD_PARTY_NOTICES.txt", "to": "licenses/THIRD_PARTY_NOTICES.txt" },
+      { "from": "../../node_modules/electron/dist/LICENSE", "to": "licenses/Electron-LICENSE.txt" },
+      { "from": "../../node_modules/electron/dist/LICENSES.chromium.html", "to": "licenses/LICENSES.chromium.html" }
     ],
     "win": {
       "target": [

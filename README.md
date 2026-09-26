@@ -1,117 +1,52 @@
 # DSH App Server
 
-独立的 DeepSeek Harness 远程桌面项目：Windows、Linux、macOS Electron 客户端选择服务器地址，Linux 上的 Harness 执行 Agent、模型请求、文件与终端操作，并保存会话。客户端复用服务端提供的完整 Web GUI。退出客户端不会关闭服务器。
+在 Windows、Linux 或 macOS 上使用 Electron 客户端，连接运行在 Linux 服务器上的 DeepSeek Harness。模型请求、Agent、终端、文件操作和会话存储都在服务器执行；关闭客户端后，服务器和任务继续运行。
 
-本项目不修改原 Harness 仓库。兼容目标为 `@deepseek-ai/dsh@0.1.7-rc.2`；客户端接入协议版本为 `1`。服务端是可安装的 Cordis bundle，客户端是独立 Electron 应用，不是原桌面程序的插件。
+本项目是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的独立社区项目，复用其 Web GUI、认证和运行时。感谢 DeepSeek Harness 及其贡献者；本项目不代表 DeepSeek 官方。支持的上游版本为 `@deepseek-ai/dsh@0.1.7-rc.2`，客户端发现协议为 `1`。
 
-当前工作站的服务管理、连接方法和验收顺序见 [验收入口](docs/acceptance.md)。其他机器按下面的标准安装步骤部署。
+## 下载客户端
 
-## Linux 服务端
+从 [Releases](https://github.com/lisp19/dsh-app-server/releases) 下载安装包，并核对随版本提供的 `SHA256SUMS`。
 
-需要 Node.js 24 和可用的模型配置。先安装指定版本的 Harness 和其插件管理器使用的 pnpm：
-
-```bash
-npm install --global @deepseek-ai/dsh@0.1.7-rc.2 pnpm@11.28.0
-export DSH_HOME="$HOME/.dsh-app-server"
-dsh --profile app-server --from-default-profile web --dump-config
-dsh plugin --profile app-server add /absolute/path/dsh-app-server-server-0.2.0.tgz
-dsh --profile app-server --no-open --port 3080
-```
-
-`--from-default-profile web` 仅用于第一次创建 profile。后续启动不要重复该参数。插件安装会自动将 bundle 加入此 profile。模型 API key 可通过 Harness 配置或服务器进程的 `DEEPSEEK_API_KEY` 提供；不要将模型 API key 填入客户端的启动令牌栏。
-
-启动输出包含 `http://127.0.0.1:3080/?token=...`。客户端分别填写服务器根地址和 `token` 的值。默认启动令牌随服务端重启改变；配置本地 passwordFile 后可使用固定密码。客户端可勾选“记住密码”，使用操作系统加密保存，退出后不保存认证 cookie；不勾选则下次重新输入。Linux 无安全密钥环时禁用密码保存。
-
-v0.4.0 内置 SSH 传输：选择 SSH，填写服务器 SSH 地址、用户名和密码或私钥，服务器 URL 填 `http://127.0.0.1:3080/`（从 SSH 主机访问的地址），另填 app-server 密码。首次连接须核对主机指纹。无需另开 SSH 命令行；详见 [SSH 说明](docs/ssh-transport.md)。
-
-### SSH 隧道
-
-Windows PowerShell 中保持此命令运行：
-
-```powershell
-ssh -N -L 3080:127.0.0.1:3080 user@linux-server
-```
-
-Electron 中填写 `http://127.0.0.1:3080/` 和 Linux 服务端输出的启动令牌。如果本机 3080 被占用，改用 `-L 13080:127.0.0.1:3080`，客户端地址相应改为 `http://127.0.0.1:13080/`。
-
-### HTTPS 直连
-
-在 Linux 上保留 loopback HTTP listener，通过 HTTPS 反向代理暴露一个专用域名：
-
-```bash
-dsh --profile app-server --no-open --port 3080 --trusted-host harness.example.com
-```
-
-修改 [Caddyfile](deploy/Caddyfile) 中的域名并部署到已有 Caddy。客户端填写 `https://harness.example.com/`。代理必须保留外部 Host，并支持 WebSocket；不要把 Host 改写为 `127.0.0.1:3080`。Caddy 的 [reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy) 支持这两项。使用有效的系统信任证书，客户端不会跳过证书验证。
-
-只支持根地址，不支持 `/harness/` 等子路径。v0.3.0 起客户端允许远程 HTTP；HTTP 明文传输令牌和会话内容，仅用于可信局域网或 VPN。互联网访问仍应使用 HTTPS 或 SSH 隧道。不要使用 `dsh web --host 0.0.0.0`，该参数在此 Harness 版本中被拒绝；全网监听通过部署 overlay 配置。
-
-需要常驻运行时，参考 [systemd 用户服务](deploy/dsh-app-server.service)。启动、安装插件和运行服务必须使用同一个账户和 `DSH_HOME`。关闭 SSH 登录终端可能结束前台服务；客户端独立生命周期不替代服务器进程托管。
-
-### systemd 自动运行与端口查询
-
-公共安装和管理脚本为 [server-control.mjs](scripts/server-control.mjs)，配置格式见 [server.example.json](deploy/server.example.json)。完整部署步骤和 `dsh-server` 操作见 [服务管理](docs/server-management.md)。配置、生成的 unit 和监听 overlay 留在机器本地，不要提交包含本机路径或凭据的文件。
-
-部署配置的 `port` 固定监听端口；可选 `passwordFile` 指向权限为 `600` 的本地固定登录密码文件。启用固定密码后，在现有客户端的启动令牌栏填写该密码，重启无需更换。安装脚本同时应用专用 profile 的版本固定兼容补丁，使非 localhost 客户端也能在模型设置中管理服务端的提供商配置与凭据；仅安装插件 tgz 不包含这些部署适配。
-
-## Electron 客户端
-
-从私有仓库的 [Releases](https://github.com/lisp19/dsh-app-server/releases) 下载对应系统安装包和服务端插件，需登录获授权的 GitHub 账户。校验 `SHA256SUMS` 后安装；版本历史见 [CHANGELOG](CHANGELOG.md)。
-
-| 系统 | 架构 | 安装格式 |
+| 系统 | 架构 | 格式 |
 | --- | --- | --- |
-| Windows | x64 | NSIS `.exe` |
+| Windows | x64 | `.exe` |
 | Linux | x64 | `.AppImage`、`.deb` |
-| macOS | Intel x64、Apple Silicon arm64 | `.dmg`、`.zip` |
+| macOS | x64、arm64 | `.dmg`、`.zip` |
 
-安装包未配置发行者签名，macOS 仅作本地 ad-hoc 签名、未 notarize。遵循系统提示与组织的软件安装政策，不要关闭系统安全防护。Linux deb 使用 `sudo apt install ./dsh-remote-0.2.0-linux-x64.deb`，安装后从应用菜单启动 DSH Remote。
+安装包未配置发行者签名，macOS 使用 ad-hoc 签名且未经公证。请遵循系统提示和组织的软件安装政策。
 
-AppImage 下载后先执行 `chmod +x dsh-remote-0.2.0-linux-x64.AppImage`，再运行该文件。没有 FUSE 时可用 `APPIMAGE_EXTRACT_AND_RUN=1 ./dsh-remote-0.2.0-linux-x64.AppImage`；本项目验证了 extraction 模式，不要求禁用 Electron sandbox。
+## 安装 Linux 服务端
 
-Windows 安装包构建命令：
-
-```powershell
-npm ci
-npm run build:win
-```
-
-Linux 构建运行 `npm run build:linux`；macOS 在对应架构的 Mac 上运行 `npm run build:mac`。产物位于 `apps/electron/dist/`，文件名带版本、系统和架构。平台构建采用 [Electron Builder 的多平台方式](https://www.electron.build/docs/features/multi-platform-build/)。开发运行：
+需要 Node.js 24、Git 和 `patch`；常驻运行还需要用户级 systemd。以下命令以运行服务的普通用户执行：
 
 ```bash
+git clone https://github.com/lisp19/dsh-app-server.git
+cd dsh-app-server
+git checkout v1.0.0
 npm ci
-npm start
-```
-
-连接页可切换中英文。选择服务器、输入启动令牌后连接。菜单中的“更换服务器”或“断开连接”返回连接页；切换服务器会清除旧连接的认证与浏览器存储。网络短暂中断时使用原 GUI 的自动恢复机制；认证失效后返回连接页重新输入令牌。
-
-远程页面在 Electron sandbox 中运行，禁用 Node 集成，不加载本地 preload。连接页的 IPC 仅允许本地页面的主 frame 调用。文件上传由用户在客户端选择文件，工作区文件浏览和终端操作发生在 Linux。
-
-## 开发与验证
-
-```bash
-npm ci
-npm test
-npm run prepare:integration
-npm run test:integration
-npm run test:electron
-```
-
-无图形桌面的 Linux 使用 `xvfb-run -a npm run test:electron`。`prepare:integration` 打包当前插件，通过正常 `dsh plugin` 安装到 `.integration/installation`。集成检查创建隔离的 Harness home、工作目录与确定性模型服务，不需要真实模型密钥；若源代码与安装包不同，会要求重新准备。
-
-```bash
 npm run pack:server
-npm run build:win
+export DSH_HOME="$HOME/.dsh-app-server"
+npm exec -- dsh --profile app-server --from-default-profile web --dump-config
+npm exec -- dsh plugin --profile app-server add "$PWD/artifacts/dsh-app-server-server-1.0.0.tgz"
 ```
 
-插件包输出到 `artifacts/`。Linux 交叉构建 NSIS 安装包需要 Wine；Windows 本机构建不需要。当前验收证据见 [发布验收记录](docs/release-verification.md) 和 [Linux QA](docs/qa-linux.md)，0.1.0 基线记录见 [verification.md](docs/verification.md)。维护与发布方法见 [CONTRIBUTING](CONTRIBUTING.md)。
+`--from-default-profile web` 仅用于第一次创建 profile。接着按 [服务管理](docs/server-management.md) 创建本机配置并安装用户服务；该步骤会应用远程模型设置和可选固定密码的兼容补丁。单独安装插件不包含这两项部署适配。
 
-## 范围与限制
+安装、启动和管理服务必须使用同一个用户、`DSH_HOME` 和 profile。上游升级需要重新验证兼容性。
 
-- 一台 Host 对应一个操作者的 Harness 权限范围，不提供多租户隔离。
-- 服务器拥有会话、配置、工作区和任务；客户端不自动同步 Windows 项目目录。
-- 浏览器自动化等工具仍由 Linux 插件提供，不借用 Windows 桌面程序的私有浏览器桥接。
-- 原桌面程序的本机运行时安装、主机更新和账号嵌入窗口不包含在该轻量客户端中。优先使用服务端配置的模型 API key。
-- 客户端限制跨源页面请求和新窗口，外部网站浏览、弹窗登录等功能不作为此版本的完整桌面集成承诺。
-- 原 Harness 的模型供应商、系统工具和插件自身限制仍然适用。
+## 连接与使用
 
-目录：`packages/server` 为 Cordis 插件，`apps/electron` 为客户端，`scripts` 为可重复验证，`deploy` 为部署模板。设计与验收要求见 [design.md](docs/design.md)。
+推荐选择客户端内置的 SSH 传输：填写 SSH 主机、用户名及密码或私钥，核对首次连接的主机指纹；服务器 URL 填写从 SSH 主机访问的地址，例如 `http://127.0.0.1:3080/`。另行填写 app-server 的启动令牌或固定密码。详见 [SSH 连接](docs/ssh-transport.md)。
+
+也可以使用 HTTPS 根地址直连。反向代理须保留外部 Host 并支持 WebSocket，服务端须信任该域名；模板见 [Caddyfile](deploy/Caddyfile)。不支持 `/harness/` 等子路径。HTTP 直连会明文传输令牌、会话和模型凭据，仅适用于可信局域网或 VPN。
+
+连接后，在 Harness 的模型设置中配置供应商与凭据。模型凭据与客户端登录密码是不同的认证信息。连接页支持中英文；勾选“记住密码”后，密码使用操作系统加密保存，认证 cookie 不落盘。Linux 需要可用的安全密钥环。
+
+服务器拥有工作区和会话，客户端不自动同步本机项目目录。本项目面向单操作者，不提供多租户隔离；服务端权限包括文件读写和命令执行。
+
+## 开发与许可
+
+开发、测试和打包方法见 [开发指南](docs/development.md)，模块与信任边界见 [架构](docs/architecture.md)。参与贡献请阅读 [CONTRIBUTING](CONTRIBUTING.md)，安全问题见 [SECURITY](SECURITY.md)，版本变化见 [CHANGELOG](CHANGELOG.md)。
+
+本项目自有代码采用 [MIT License](LICENSE)。DeepSeek Harness、Electron 和其他依赖保留各自许可证；归属及随包许可说明见 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)。

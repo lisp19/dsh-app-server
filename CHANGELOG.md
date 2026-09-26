@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0
+
+- Prepare the project for open-source distribution under MIT, preserving DeepSeek Harness attribution and third-party copyrights.
+- Add a locked dependency inventory and bundled npm, Electron and Chromium license notices, with package-content gates.
+- Replace workstation-specific acceptance and planning notes with deployment, architecture and contributor documentation.
+- Add full-history secret scanning, dependency audit, source hygiene and license checks to CI.
+- Require native desktop smoke, Linux Harness integration and all platform builds before release; remove build-only publication.
+- Add credential-store and real SSH forwarding regression checks. Codex provider connection was confirmed working by the operator.
+
 ## 0.4.0
 
 - Remember desktop passwords using OS encryption; allow forgetting credentials and reject insecure Linux storage fallback.

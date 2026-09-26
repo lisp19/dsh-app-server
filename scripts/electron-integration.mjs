@@ -162,7 +162,7 @@ try {
     console.error('Remote API responses:', requests.slice(-30));
     console.error('Remote page errors:', pageErrors);
     console.error('Remote UI:', (await remote.locator('body').innerText()).slice(0, 3000));
-    await remote.screenshot({ path: join(root, 'artifacts/electron-failure.png') });
+    await remote.screenshot({ path: join(root, 'artifacts/screenshots/electron-failure.png') });
   }
   throw error;
 } finally {

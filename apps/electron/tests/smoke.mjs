@@ -51,7 +51,8 @@ try {
   await settings.locator('#connect').waitFor();
   if (await settings.locator('#remember').isChecked()) await settings.locator('#remember').uncheck();
   assert.equal(await settings.locator('#token').inputValue(), '');
-  const screenshot = fileURLToPath(new URL('../../../artifacts/screenshots/connection.png', import.meta.url));
+  const mode = executablePath ? 'packaged' : 'source';
+  const screenshot = fileURLToPath(new URL(`../../../artifacts/screenshots/connection-${mode}.png`, import.meta.url));
   await mkdir(path.dirname(screenshot), { recursive: true });
   await settings.screenshot({ path: screenshot });
   await settings.locator('#server').fill(origin);

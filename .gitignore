@@ -6,4 +6,17 @@ artifacts/
 test-results/
 *.log
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+connection.json
+ssh-hosts.json
+server.local.json
+login-password
+coverage/
 apps/electron/dist/

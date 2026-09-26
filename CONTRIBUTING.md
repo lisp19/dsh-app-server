@@ -1,15 +1,20 @@
 # Contributing
 
-Use Node.js 24 and `npm ci`. This private repository follows conventional commits and immutable semantic version tags. The reference Harness repository is read-only; changes belong here.
+Use Node.js 24 and install the locked dependencies with `npm ci`. See [development](docs/development.md) for tests and packaging, and [architecture](docs/architecture.md) for component boundaries.
 
-Create a short-lived branch from `main`, change only the relevant components, and run `npm test`. For authentication, UI or lifecycle work, also run the Electron smoke, `npm run prepare:integration`, `npm run test:integration`, and `xvfb-run -a npm run test:electron` on Linux. Use `DSH_ELECTRON_EXECUTABLE=/absolute/path/to/dsh-remote` for the packaged-app check. Run `xvfb-run -a node scripts/experience.mjs` for connection-page interactions and screenshots. Use pull requests for subsequent changes.
+Open a focused pull request with the problem, resulting behavior and validation performed. Include a regression test for behavior changes where practical. Keep local deployments, credentials, logs and generated artifacts out of commits. Upstream Harness changes belong upstream; version-specific integration patches belong in `compat/` and must preserve upstream attribution.
+
+## Validation
+
+Run `npm test` for every code change. Authentication, transport, lifecycle and GUI changes also require the Electron smoke test and actual Harness integration checks documented in the development guide. Test with deterministic model fixtures; paid provider calls are not required. Platform packaging checks do not substitute for functional tests or interactive installer testing.
 
 ## Releases
 
-1. Update root, client and plugin versions together and regenerate `package-lock.json` with `npm install --package-lock-only`.
-2. Add `docs/releases/v<VERSION>.md`, update the changelog, and pass the full native build workflow on the candidate commit.
-3. Review the diff and generated package contents. Never commit tokens, cookies, model credentials, local profiles or test data.
-4. Create an annotated `v<VERSION>` tag on the reviewed commit and push it. The release workflow rebuilds/tests on native runners, checks all required artifacts and versions, then publishes assets and hashes. A failed platform prevents publication.
-5. Verify the private release with `gh release view`, download its assets and run `sha256sum -c SHA256SUMS` on Linux. Do not replace assets of a published version; ship a new patch version.
+1. Update root, client and plugin versions together, refresh `package-lock.json`, and update the changelog and versioned release notes.
+2. Run the required tests and native platform builds on the candidate commit. Review package contents and third-party license notices.
+3. Tag the reviewed commit with an annotated `v<VERSION>` tag. The release pipeline must pass its test and artifact gates before publishing.
+4. Verify the published asset list, manifest and `SHA256SUMS`. Published versions are immutable; corrections require a new version.
 
-The baseline 0.1.0 predates multi-platform CI and is published with its original locally verified artifacts. Packages are unsigned; code signing requires separately provisioned publisher credentials. Tests use deterministic model fixtures, not paid external API calls.
+Report what actually ran and distinguish automated checks from manual installation or live-provider verification. Never label a build-only result as a functional test pass. Publisher signing and Apple notarization require separately provisioned credentials.
+
+By contributing, you agree that your original contributions are provided under the project's MIT license. Keep copyright and license notices for third-party material intact.

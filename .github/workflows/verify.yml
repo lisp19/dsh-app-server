@@ -1,22 +1,42 @@
 name: Verify and package desktops
 on:
   push:
-    branches: [main, 'feat/**', 'fix/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
-    inputs:
-      build_only:
-        description: Build packages without running tests (explicit acceptance builds only)
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
+# Use a distinct group from the reusable workflow's release caller.
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check:repository
+      - run: npm run scan:secrets
+      - run: npm run licenses:check
+      - run: npm audit --audit-level=high
+      - run: npm test
+
   desktop:
-    timeout-minutes: 30
+    needs: checks
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -24,30 +44,34 @@ jobs:
           - runner: ubuntu-24.04
             platform: linux
             arch: x64
-          - runner: windows-latest
+            unpacked: apps/electron/dist/linux-unpacked
+          - runner: windows-2025
             platform: win
             arch: x64
             executable: apps/electron/dist/win-unpacked/DSH Remote.exe
+            unpacked: apps/electron/dist/win-unpacked
           - runner: macos-15-intel
             platform: mac
             arch: x64
             executable: apps/electron/dist/mac/DSH Remote.app/Contents/MacOS/DSH Remote
+            unpacked: apps/electron/dist/mac/DSH Remote.app
           - runner: macos-15
             platform: mac
             arch: arm64
             executable: apps/electron/dist/mac-arm64/DSH Remote.app/Contents/MacOS/DSH Remote
+            unpacked: apps/electron/dist/mac-arm64/DSH Remote.app
     runs-on: ${{ matrix.runner }}
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm test
-        if: ${{ !inputs.build_only }}
       - name: Download development Electron runtime
         run: node node_modules/electron/install.js
       - name: Configure Electron setuid sandbox (Linux)
@@ -56,33 +80,35 @@ jobs:
           sudo chown root:root node_modules/electron/dist/chrome-sandbox
           sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - name: Electron smoke (Linux)
-        if: runner.os == 'Linux' && !inputs.build_only
+        if: runner.os == 'Linux'
         run: xvfb-run -a node apps/electron/tests/smoke.mjs
       - name: Electron smoke (Windows and macOS)
-        if: runner.os != 'Linux' && !inputs.build_only
+        if: runner.os != 'Linux'
         run: node apps/electron/tests/smoke.mjs
       - name: Build native desktop packages
         run: npm run build:${{ matrix.platform }} -- --${{ matrix.arch }}
+      - name: Verify packaged license notices
+        run: node scripts/check-package.mjs "${{ matrix.unpacked }}"
       - name: Smoke packaged Windows and macOS applications
-        if: runner.os != 'Linux' && !inputs.build_only
+        if: runner.os != 'Linux'
         env:
           DSH_ELECTRON_EXECUTABLE: ${{ matrix.executable }}
         run: node apps/electron/tests/smoke.mjs
       - run: npm run prepare:integration
-        if: runner.os == 'Linux' && !inputs.build_only
+        if: runner.os == 'Linux'
       - run: npm run test:integration
-        if: runner.os == 'Linux' && !inputs.build_only
-      - run: npm run pack:server
-        if: runner.os == 'Linux' && inputs.build_only
-      - name: Packaged Linux functional and experience checks
-        if: runner.os == 'Linux' && !inputs.build_only
+        if: runner.os == 'Linux'
+      - name: Packaged Linux smoke, functional and experience checks
+        if: runner.os == 'Linux'
         env:
           DSH_ELECTRON_EXECUTABLE: /opt/DSH Remote/dsh-remote
         run: |
+          sudo apt-get update
           sudo apt-get install -y ./apps/electron/dist/*.deb
+          xvfb-run -a node apps/electron/tests/smoke.mjs
           xvfb-run -a npm run test:electron
           xvfb-run -a node scripts/experience.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -93,16 +119,17 @@ jobs:
             apps/electron/dist/*.dmg
             apps/electron/dist/*.zip
           retention-days: 7
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: runner.os == 'Linux'
         with:
           name: release-plugin
           path: artifacts/*.tgz
           if-no-files-found: error
           retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: always() && runner.os == 'Linux'
+      - name: Preserve native desktop screenshots and reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
         with:
-          name: linux-host-evidence
+          name: evidence-${{ matrix.platform }}-${{ matrix.arch }}
           path: artifacts/screenshots/
           retention-days: 7

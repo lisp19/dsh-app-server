@@ -9,7 +9,7 @@ const validInfo = { product: 'dsh-app-server', protocolVersion: 1, platform: 'li
 const rejectsCode = code => error => error.code === code;
 
 test('explicit root HTTP and HTTPS URLs are accepted', () => {
-  for (const url of ['https://example.com', 'https://example.com:9443/', 'http://127.0.0.1:3000/', 'http://localhost/', 'http://[::1]:3000/', 'http://example.com', 'http://192.168.0.124:3080/', 'http://localhost.evil.test']) {
+  for (const url of ['https://example.com', 'https://example.com:9443/', 'http://127.0.0.1:3000/', 'http://localhost/', 'http://[::1]:3000/', 'http://example.com', 'http://192.0.2.10:3080/', 'http://localhost.evil.test']) {
     assert.equal(parseServerURL(url).pathname, '/');
   }
   for (const url of ['file:///etc/passwd', 'https://user:secret@example.com/', 'https://@example.com/', 'https://example.com/?token=secret', 'https://example.com/#secret', 'https://example.com/path', 'https://example.com/a/..', 'https://example.com\\@evil.test', 'http://127.1', 'http://2130706433', 'http://0x7f000001', 'https://example.com/?', 'https://example.com/#']) {

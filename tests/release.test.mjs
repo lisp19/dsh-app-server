@@ -34,13 +34,14 @@ test('release manifest requires every target, correct tag and nonempty artifacts
   for (const name of names) await writeFile(join(directory, name), 'fixture');
   const result = run(`v${root.version}`);
   assert.equal(result.status, 0, result.stderr);
+  names.push('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt', 'npm-inventory.json');
   const sums = await readFile(join(directory, 'SHA256SUMS'), 'utf8');
   assert.equal(sums.trim().split('\n').length, names.length);
   assert.ok(names.every(name => sums.includes(`  ${name}\n`)));
   const manifest = JSON.parse(await readFile(join(directory, 'release-manifest.json')));
   assert.equal(manifest.version, root.version);
   assert.equal(manifest.assets.length, names.length);
-  assert.ok(manifest.assets.every(asset => asset.bytes === 7 && /^[a-f0-9]{64}$/.test(asset.sha256)));
+  assert.ok(manifest.assets.every(asset => asset.bytes > 0 && /^[a-f0-9]{64}$/.test(asset.sha256)));
   await writeFile(join(directory, names[0]), '');
   assert.notEqual(run(`v${root.version}`).status, 0);
 });
