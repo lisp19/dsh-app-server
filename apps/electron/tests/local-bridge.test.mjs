@@ -16,6 +16,7 @@ async function fixture(t) {
     received.push(req.headers);
     if (req.url === '/external') res.writeHead(302, { location: 'https://evil.test/', 'set-cookie': 'secret=remote' });
     else if (req.url === '/redirect') res.writeHead(303, { location: `http://${req.headers.host}/next`, 'set-cookie': 'secret=remote' });
+    else if (req.url === '/double-slash') res.writeHead(303, { location: `http://${req.headers.host}//evil.example/path` });
     else if (req.url === '/unauthorized') res.writeHead(401);
     else res.writeHead(200, { 'set-cookie': 'secret=remote' });
     req.pipe(res);
@@ -68,6 +69,8 @@ test('same-origin redirects become local, external redirects are blocked, auth f
   const { bridge, headers } = await fixture(t);
   const response = await fetch(bridge.url + 'redirect', { headers, redirect: 'manual' });
   assert.equal(response.headers.get('location'), bridge.url + 'next');
+  const doubleSlash = await fetch(bridge.url + 'double-slash', { headers, redirect: 'manual' });
+  assert.equal(new URL(doubleSlash.headers.get('location')).origin, new URL(bridge.url).origin);
   assert.equal((await fetch(bridge.url + 'external', { headers, redirect: 'manual' })).status, 502);
   assert.equal((await fetch(bridge.url + 'unauthorized', { headers })).status, 401);
 });
