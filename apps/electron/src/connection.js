@@ -3,7 +3,9 @@ import { ConnectionError, parseServerURL } from './security.js';
 /** Validate the versioned server identity before loading its GUI. */
 export function validateServerInfo(info) {
   if (!info || info.product !== 'dsh-app-server') throw new ConnectionError('missingPlugin');
-  if (info.protocolVersion !== 1 || typeof info.platform !== 'string' || !info.platform) throw new ConnectionError('protocol');
+  if (![1, 2].includes(info.protocolVersion) || typeof info.platform !== 'string' || !info.platform) throw new ConnectionError('protocol');
+  if (info.protocolVersion === 2 && (typeof info.upstreamVersion !== 'string' || !info.upstreamVersion
+    || info.capabilities?.http !== true || info.capabilities?.websocket !== true || info.capabilities?.passwordLogin !== true)) throw new ConnectionError('protocol');
   return info;
 }
 

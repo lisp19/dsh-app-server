@@ -71,6 +71,7 @@ test('info endpoint distinguishes unauthorized, missing plugin and protocol mism
     await assert.rejects(authenticate(mockSession(config), 'https://server.example', 'secret', new AbortController().signal), rejectsCode(code));
   }
   assert.equal(validateServerInfo({ ...validInfo, platform: 'win32' }).platform, 'win32');
+  assert.equal(validateServerInfo({ ...validInfo, protocolVersion: 2, upstreamVersion: '0.20.2', capabilities: { http: true, websocket: true, passwordLogin: true } }).protocolVersion, 2);
 });
 
 test('a newer attempt cancels the old one and late completion cannot win', async () => {

@@ -1,8 +1,9 @@
 /** Run with xvfb-run -a node apps/electron/tests/smoke.mjs on headless Linux. */
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _electron } from 'playwright';
@@ -10,7 +11,7 @@ import { _electron } from 'playwright';
 const directory = await mkdtemp(path.join(tmpdir(), 'dsh-electron-smoke-'));
 const appDirectory = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const secret = 'smoke-only-secret';
-let infoVersion = 1;
+let infoVersion = 2;
 let expire = false;
 let rejectGUI = false;
 let serverRequests = 0;
@@ -27,17 +28,27 @@ const handleRequest = (name, loginCookies) => (req, res) => {
   if (req.url === '/alive') { res.end('alive'); return; }
   if (req.headers.cookie !== 'auth=fixture' || expire) { res.writeHead(401).end(); return; }
   if (req.url === '/api/app-server/info') {
-    res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ product: 'dsh-app-server', protocolVersion: infoVersion, platform: 'linux' }));
+    res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ product: 'dsh-app-server', protocolVersion: infoVersion, platform: 'linux', upstreamVersion: '0.20.2', capabilities: { http: true, websocket: true, passwordLogin: true } }));
     return;
   }
   if (rejectGUI) { res.writeHead(401).end('Authentication required'); return; }
   res.writeHead(200, { 'content-type': 'text/html' }).end(`<!doctype html><title>Remote fixture</title><h1>${name}</h1><a id="external" href="https://example.invalid/">Outside</a>`);
 };
 const server = createServer(handleRequest('Remote workspace'));
+server.on('upgrade', (req, socket) => {
+  if (req.headers.cookie !== 'auth=fixture' || req.headers['x-dsh-local-bridge']) { socket.destroy(); return; }
+  const accept = createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+  socket.write(`HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+  socket.write(Buffer.from([0x81, 2, 0x6f, 0x6b]));
+  socket.on('data', () => socket.end(Buffer.from([0x88, 0])));
+  socket.on('error', () => socket.destroy());
+});
 const secondServer = createServer(handleRequest('Second workspace', secondLoginCookies));
-await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const remoteAddress = Object.values(networkInterfaces()).flat().find(address => address.family === 'IPv4' && !address.internal)?.address;
+assert.ok(remoteAddress, 'Smoke requires a non-loopback interface to exercise the localhost bridge');
+await new Promise(resolve => server.listen(0, '0.0.0.0', resolve));
 await new Promise(resolve => secondServer.listen(0, '127.0.0.1', resolve));
-const origin = `http://127.0.0.1:${server.address().port}`;
+const origin = `http://${remoteAddress}:${server.address().port}`;
 const secondOrigin = `http://127.0.0.1:${secondServer.address().port}`;
 let application;
 try {
@@ -62,11 +73,11 @@ try {
   await settings.waitForFunction(() => document.querySelector('#status').textContent.includes('Authentication failed'));
   assert.equal(await settings.locator('#token').inputValue(), '');
 
-  infoVersion = 2;
+  infoVersion = 99;
   await settings.locator('#token').fill(secret);
   await settings.locator('#connect').click();
   await settings.waitForFunction(() => document.querySelector('#status').textContent.includes('incompatible protocol'));
-  infoVersion = 1;
+  infoVersion = 2;
 
   rejectGUI = true;
   await settings.locator('#token').fill(secret);
@@ -92,6 +103,15 @@ try {
     return remote;
   };
   let remote = await openRemote();
+  const localOrigin = new URL(remote.url()).origin;
+  assert.equal(new URL(remote.url()).hostname, '127.0.0.1');
+  assert.notEqual(localOrigin, origin);
+  assert.equal((await fetch(remote.url())).status, 403, 'Knowing the local URL must not grant access');
+  assert.equal(await remote.evaluate(() => new Promise((resolve, reject) => {
+    const socket = new WebSocket(`ws://${location.host}/socket`);
+    socket.onmessage = event => { resolve(event.data); socket.close(); };
+    socket.onerror = () => reject(new Error('Local WebSocket failed'));
+  })), 'ok');
   assert.equal(await remote.locator('h1').textContent(), 'Remote workspace');
   assert.deepEqual(await remote.evaluate(() => [typeof window.require, typeof window.process, typeof window.connectionSettings]), ['undefined', 'undefined', 'undefined']);
   const prefs = await application.evaluate(({ BrowserWindow }) => {
@@ -104,7 +124,7 @@ try {
   assert.equal(prefs.nodeIntegration, false);
   assert.ok(!prefs.preload);
   await remote.locator('#external').click({ noWaitAfter: true });
-  assert.equal(remote.url(), `${origin}/`);
+  assert.equal(remote.url(), `${localOrigin}/`);
   assert.equal(await remote.evaluate(() => window.open('https://example.invalid/') === null), true);
   const saved = await readFile(path.join(directory, 'connection.json'), 'utf8');
   assert.deepEqual(JSON.parse(saved), { version: 2, url: `${origin}/`, transport: 'direct', remember: false });
@@ -130,7 +150,8 @@ try {
   await settings.locator('#server').fill(secondOrigin);
   remote = await openRemote();
   assert.equal(await remote.locator('h1').textContent(), 'Second workspace');
-  assert.equal(remote.url(), `${secondOrigin}/`);
+  assert.equal(new URL(remote.url()).hostname, '127.0.0.1');
+  assert.notEqual(new URL(remote.url()).origin, secondOrigin);
   assert.deepEqual(secondLoginCookies, [undefined]);
   assert.equal(await remote.evaluate(async () => (await fetch('/alive')).text()), 'alive');
   assert.equal(await (await fetch(`${origin}/alive`)).text(), 'alive');

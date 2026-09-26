@@ -9,6 +9,7 @@ import { exchangeToken } from './token-exchange.js';
 import { connectionProfile, createCredentialStore } from './credential-store.js';
 import { openSSHTunnel } from './ssh-tunnel.js';
 import { createHostKeyVerifier } from './ssh-host-keys.js';
+import { createLocalBridge } from './local-bridge.js';
 
 const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
 const settingsURL = new URL('./settings.html', import.meta.url).href;
@@ -17,6 +18,7 @@ let settingsWindow;
 let remoteWindow;
 let remoteSession;
 let remoteTunnel;
+let remoteBridge;
 let credentialStore;
 let verifyHostKey;
 let locale = 'en';
@@ -61,10 +63,13 @@ function disconnect() {
   const oldWindow = remoteWindow;
   const oldSession = remoteSession;
   const oldTunnel = remoteTunnel;
+  const oldBridge = remoteBridge;
   remoteWindow = undefined;
   remoteSession = undefined;
   remoteTunnel = undefined;
+  remoteBridge = undefined;
   oldWindow?.destroy();
+  oldBridge?.close();
   oldTunnel?.close();
   void discardSession(oldSession);
   if (!quitting && settingsWindow && !settingsWindow.isDestroyed()) {
@@ -100,6 +105,7 @@ async function connect(input) {
   let candidate;
   let candidateSession;
   let candidateTunnel;
+  let candidateBridge;
   let url;
   let authenticated = false;
   let unauthorized = false;
@@ -146,18 +152,19 @@ async function connect(input) {
         url = parseServerURL(candidateTunnel.url);
       }
       candidateSession = session.fromPartition(`connection-${randomUUID()}`, { cache: false });
-      denyPermissions(candidateSession, url.origin);
+      let allowedOrigin = url.origin;
+      denyPermissions(candidateSession, undefined);
       candidateSession.webRequest.onCompleted(details => {
-        if (details.statusCode === 401 && allowsNavigation(details.url, url.origin)) authenticationFailed();
+        if (details.statusCode === 401 && allowsNavigation(details.url, allowedOrigin)) authenticationFailed();
       });
       // Keep redirects and all subresource requests inside the selected origin.
       candidateSession.webRequest.onBeforeRequest((details, callback) => {
-        let allowed = allowsNavigation(details.url, url.origin);
+        let allowed = allowsNavigation(details.url, allowedOrigin);
         try {
           const request = new URL(details.url);
           if (request.protocol === 'wss:' || request.protocol === 'ws:') {
             request.protocol = request.protocol === 'wss:' ? 'https:' : 'http:';
-            allowed = allowsNavigation(request.href, url.origin);
+            allowed = allowsNavigation(request.href, allowedOrigin);
           }
           if (['data:', 'blob:'].includes(request.protocol)) allowed = true;
         } catch { allowed = false; }
@@ -168,11 +175,32 @@ async function connect(input) {
       signal.throwIfAborted();
       assertCandidate();
       authenticated = true;
+      candidateBridge = await createLocalBridge({
+        upstreamURL: url.href, getCookies: target => candidateSession.cookies.get({ url: target }), signal,
+      });
+      signal.throwIfAborted();
+      assertCandidate();
+      const bridgeURL = new URL(candidateBridge.url);
+      allowedOrigin = bridgeURL.origin;
+      // This secret exists only in the privileged process and is never forwarded upstream.
+      candidateSession.webRequest.onBeforeSendHeaders((details, callback) => {
+        const headers = { ...details.requestHeaders };
+        for (const key of Object.keys(headers)) {
+          if (key.toLowerCase() === candidateBridge.headerName) delete headers[key];
+        }
+        const target = new URL(details.url);
+        if (target.protocol === 'ws:') target.protocol = 'http:';
+        if (target.origin === allowedOrigin) headers[candidateBridge.headerName] = candidateBridge.secret;
+        callback({ requestHeaders: headers });
+      });
+      // Download authorization follows the GUI's local origin.
+      candidateSession.removeAllListeners('will-download');
+      denyPermissions(candidateSession, allowedOrigin);
       candidate = new BrowserWindow({
         width: 1360, height: 900, minWidth: 720, minHeight: 480, show: false, title: strings[locale].title,
         webPreferences: { session: candidateSession, nodeIntegration: false, contextIsolation: true, sandbox: true, webviewTag: false },
       });
-      guardWindow(candidate, target => allowsNavigation(target, url.origin));
+      guardWindow(candidate, target => allowsNavigation(target, allowedOrigin));
       candidate.webContents.on('render-process-gone', () => {
         if (remoteWindow === candidate) {
           disconnect();
@@ -185,7 +213,7 @@ async function connect(input) {
       const abort = () => { if (candidate && !candidate.isDestroyed()) candidate.destroy(); };
       signal.addEventListener('abort', abort, { once: true });
       try {
-        await candidate.loadURL(url.href);
+        await candidate.loadURL(bridgeURL.href);
         signal.throwIfAborted();
         assertCandidate();
       } finally { signal.removeEventListener('abort', abort); }
@@ -200,6 +228,7 @@ async function connect(input) {
     remoteWindow = candidate;
     remoteSession = candidateSession;
     remoteTunnel = candidateTunnel;
+    remoteBridge = candidateBridge;
     candidate.on('closed', () => { if (remoteWindow === candidate) app.quit(); });
     candidate.show();
     settingsWindow.hide();
@@ -207,6 +236,7 @@ async function connect(input) {
     return { ok: true };
   } catch (error) {
     if (candidate && !candidate.isDestroyed()) candidate.destroy();
+    candidateBridge?.close();
     candidateTunnel?.close();
     await discardSession(candidateSession);
     return { ok: false, code: errorCode(error) };
@@ -217,6 +247,7 @@ app.on('before-quit', () => {
   quitting = true;
   connectionGeneration++;
   attempts.cancel();
+  remoteBridge?.close();
   remoteTunnel?.close();
   void discardSession(remoteSession);
 });
