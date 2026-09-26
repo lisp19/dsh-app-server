@@ -38,7 +38,7 @@
   "devDependencies": {
     "@electron/asar": "3.4.1",
     "fflate": "0.8.3",
-    "playwright": "^1.58.2",
+    "playwright": "^1.63.0",
     "pnpm": "11.28.0",
     "ws": "^8.21.0"
   }
