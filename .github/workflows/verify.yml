@@ -133,7 +133,7 @@ jobs:
           xvfb-run -a node apps/electron/tests/smoke.mjs
           xvfb-run -a npm run test:electron
           xvfb-run -a node scripts/experience.mjs
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -144,7 +144,7 @@ jobs:
             apps/electron/dist/*.dmg
             apps/electron/dist/*.zip
           retention-days: 7
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: runner.os == 'Linux'
         with:
           name: release-plugin
@@ -152,7 +152,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Preserve native desktop screenshots and reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: evidence-${{ matrix.platform }}-${{ matrix.arch }}
